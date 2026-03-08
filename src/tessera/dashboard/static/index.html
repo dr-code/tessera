@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tessera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-brand">
+      <span class="header-logo">tessera</span>
+      <span id="project-path" class="header-path"></span>
+    </div>
+    <div class="header-right">
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        live
+      </div>
+      <span id="last-updated" class="header-updated"></span>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- Stat cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">&#9670;</div>
+        <div class="stat-value" id="stat-files">—</div>
+        <div class="stat-label">Files indexed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#9670;</div>
+        <div class="stat-value" id="stat-symbols">—</div>
+        <div class="stat-label">Symbols</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#9670;</div>
+        <div class="stat-value" id="stat-edges">—</div>
+        <div class="stat-label">Edges</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">&#9670;</div>
+        <div class="stat-value" id="stat-sessions">—</div>
+        <div class="stat-label">Sessions</div>
+      </div>
+    </div>
+
+    <!-- Session filter bar -->
+    <div class="filter-bar">
+      <label class="filter-label" for="session-select">Session</label>
+      <select id="session-select" class="session-select">
+        <option value="">All sessions</option>
+      </select>
+      <button id="session-clear" class="filter-clear" title="Clear filter">&#10005;</button>
+      <span class="filter-sep"></span>
+      <span class="filter-hint" id="filter-hint">Showing all sessions</span>
+    </div>
+
+    <!-- 2-column grid -->
+    <div class="content-grid">
+
+      <!-- Left column -->
+      <div class="content-col">
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Token Savings</h2>
+            <span id="savings-summary" class="card-meta"></span>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="savings-chart"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Hot Files</h2>
+            <span id="hot-files-meta" class="card-meta"></span>
+          </div>
+          <div id="hot-files-list" class="hot-files-list"></div>
+        </div>
+
+      </div>
+
+      <!-- Right column -->
+      <div class="content-col">
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Plan Status</h2>
+          </div>
+          <div id="plans-list" class="plans-list"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Session Activity</h2>
+            <div id="action-type-counts" class="action-type-counts"></div>
+          </div>
+          <div id="actions-feed" class="actions-feed"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Full-width decisions -->
+    <div class="card decisions-card">
+      <div class="card-header">
+        <h2 class="card-title">Locked Decisions</h2>
+        <span id="decisions-count" class="card-meta"></span>
+      </div>
+      <div id="decisions-list" class="decisions-grid"></div>
+    </div>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

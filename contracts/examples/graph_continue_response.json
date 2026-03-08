@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "turn": 1,
+  "query": "add JWT authentication middleware",
+  "intent": "feature",
+  "confidence": "high",
+  "max_supplementary_greps": 0,
+  "max_supplementary_files": 0,
+  "recommended_files": [
+    {
+      "path": "src/middleware/auth.py",
+      "score": 14.5,
+      "summary": "JWT authentication middleware",
+      "role": "logic",
+      "symbols": ["verify_jwt", "require_auth"]
+    },
+    {
+      "path": "src/config.py",
+      "score": 8.2,
+      "summary": "Application configuration",
+      "role": "code",
+      "symbols": ["Config", "load_config"]
+    }
+  ],
+  "cache_hit": false,
+  "graph_stats": { "files": 42, "symbols": 187, "edges": 63, "sessions": 3 },
+  "recent_decisions": [
+    { "summary": "Use SQLite for session storage", "scope": "project" }
+  ]
+}
