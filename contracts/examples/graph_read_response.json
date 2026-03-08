@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "path": "src/middleware/auth.py",
+  "content": "import jwt\nfrom functools import wraps\n\ndef verify_jwt(token: str) -> dict:\n    ...",
+  "chars": 120,
+  "total_chars": 850,
+  "truncated": true
+}

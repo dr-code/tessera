@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tessera": {
+      "command": "/Users/rutvikshah/.local/bin/tessera",
+      "args": [
+        "mcp"
+      ],
+      "env": {
+        "TESSERA_PROJECT_ROOT": "/Users/rutvikshah/Projects/tessera"
+      }
+    }
+  }
+}

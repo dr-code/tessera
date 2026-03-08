@@ -1,0 +1,28 @@
+<plan>
+  <metadata>
+    <task>Add JWT authentication</task>
+    <created>2026-03-07T10:00:00Z</created>
+    <rounds>3</rounds>
+    <verdict>approved</verdict>
+  </metadata>
+  <targets>
+    <file action="create">src/middleware/auth.py</file>
+    <file action="modify">src/routes/user.py</file>
+    <file action="modify">src/config.py</file>
+  </targets>
+  <tasks order="sequential">
+    <task id="1" file="src/middleware/auth.py" keywords="jwt,middleware,validation">
+      Create JWT validation middleware
+    </task>
+    <task id="2" file="src/routes/user.py" depends="1" keywords="auth,middleware,routes,protected">
+      Add auth middleware to protected routes
+    </task>
+    <task id="3" file="src/config.py" keywords="jwt,secret,config,environment">
+      Add JWT_SECRET to config
+    </task>
+  </tasks>
+  <validation>
+    <criterion>All protected routes return 401 without valid token</criterion>
+    <criterion>JWT tokens expire after 24 hours</criterion>
+  </validation>
+</plan>

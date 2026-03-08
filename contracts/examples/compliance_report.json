@@ -1,0 +1,12 @@
+{
+  "plan_id": 1,
+  "base_ref": "HEAD~1",
+  "matched": [
+    { "path": "src/middleware/auth.py", "action": "create" },
+    { "path": "src/routes/user.py", "action": "modify" }
+  ],
+  "missing": [
+    { "path": "src/config.py", "action": "modify" }
+  ],
+  "extra": ["package.json"]
+}

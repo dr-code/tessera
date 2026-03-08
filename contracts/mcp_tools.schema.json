@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tessera MCP Tool Responses",
+  "version": "1",
+  "definitions": {
+    "ok_response": {
+      "type": "object",
+      "required": ["ok"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "error": { "type": "string" }
+      }
+    },
+    "graph_continue_response": {
+      "allOf": [{ "$ref": "#/definitions/ok_response" }],
+      "properties": {
+        "turn": { "type": "integer" },
+        "query": { "type": "string" },
+        "intent": { "type": "string", "enum": ["debug", "explain", "test", "refactor", "feature", "edit", "general"] },
+        "confidence": { "type": "string", "enum": ["high", "medium", "low"] },
+        "max_supplementary_greps": { "type": "integer" },
+        "max_supplementary_files": { "type": "integer" },
+        "recommended_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": { "type": "string" },
+              "score": { "type": "number" },
+              "summary": { "type": "string" },
+              "role": { "type": "string" },
+              "symbols": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "cache_hit": { "type": "boolean" },
+        "needs_scan": { "type": "boolean" },
+        "skip": { "type": "boolean" }
+      }
+    },
+    "graph_read_response": {
+      "allOf": [{ "$ref": "#/definitions/ok_response" }],
+      "properties": {
+        "path": { "type": "string" },
+        "content": { "type": "string" },
+        "chars": { "type": "integer" },
+        "total_chars": { "type": "integer" },
+        "truncated": { "type": "boolean" },
+        "symbol": { "type": "string" },
+        "line_start": { "type": "integer" },
+        "line_end": { "type": "integer" },
+        "stale": { "type": "boolean" }
+      }
+    },
+    "graph_register_edit_response": {
+      "allOf": [{ "$ref": "#/definitions/ok_response" }],
+      "properties": {
+        "files_registered": { "type": "array", "items": { "type": "string" } },
+        "summary": { "type": "string" },
+        "cache_invalidated": { "type": "integer" },
+        "checklist_auto_completed": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}
