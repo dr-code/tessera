@@ -66,3 +66,73 @@ tessera scan .
 - Max 1 `graph_retrieve` per turn
 - No raw grep/rg/bash file reads before `graph_continue`
 <!-- TESSERA:END -->
+
+---
+
+## Critical Rules
+
+### 0. NEVER Publish Sensitive Data
+- NEVER commit passwords, API keys, tokens, or secrets to git
+- NEVER commit `.env` files — ALWAYS verify `.env` is in `.gitignore`
+- Before ANY commit: verify no secrets are included
+- NEVER output secrets in suggestions, logs, or responses
+
+### 3. Testing
+- Minimum 3 assertions per test
+- Explicit success criteria only — "it works" is not a criterion
+
+### 4. Quality Gates
+- No file > 300 lines, no function > 50 lines
+- All tests must pass before committing
+- No linter warnings
+
+### 5. Git Workflow
+- NEVER work on main
+- Branch naming: `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`, `test/`
+
+### 6. Plan Mode
+- For any non-trivial task, start in plan mode
+- Named steps only; when modifying a plan, replace the step instead of appending
+
+### 7. Merge Gate — MDD
+- `docs/` updated to reflect what was actually built
+- Code matches the documented spec
+- Tests pass, no secrets committed
+
+### 8. Renames
+- Never do project-wide renames without a checklist and a fresh follow-up session
+
+### 9. CLAUDE.md Is Team Memory
+- When Claude makes a project-specific mistake, add the rule here
+
+---
+
+## Project Docs
+
+- `docs/PROJECT_CONTEXT.md` — feature map, quick reference, common gotchas
+- `docs/ARCHITECTURE_SUMMARY.md` — 1-page architecture brief
+- `docs/ARCHITECTURE.md` — full system architecture
+- `docs/INFRASTRUCTURE.md` — deployment and environment details
+- `docs/DECISIONS.md` — architectural decisions
+- `.env.example` — required environment variables
+
+---
+
+## Python Coding Standards
+
+- Use `pyproject.toml` for all project metadata and tool config (ruff, pytest, mypy)
+- Type-annotate all function signatures; use `from __future__ import annotations` for forward refs
+- Use `pytest` for all tests; fixtures in `conftest.py`; no bare `assert` without a message in non-test code
+- Prefer `pathlib.Path` over `os.path`
+- All write operations should be atomic — use temp file + `os.replace()` (already a project rule)
+- Never use `except Exception` without logging; always re-raise or handle explicitly
+- Run `ruff check .` and `mypy src/` clean before committing
+
+---
+
+## Workflow Preferences
+
+- Quality over speed — if unsure, ask before executing
+- Plan first, code second — use plan mode for non-trivial tasks
+- One task, one chat — `/clear` between unrelated tasks
+- When testing: queue observations, fix in batch
