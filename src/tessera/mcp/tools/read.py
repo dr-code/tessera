@@ -9,11 +9,10 @@ Supports:
 from __future__ import annotations
 
 import hashlib
-import os
 from pathlib import Path
 
 from ...core.database import Database
-from ...graph.symbol_parser import compute_body_hash, parse_symbols
+from ...graph.symbol_parser import parse_symbols
 from .state import TurnState
 
 
@@ -105,7 +104,7 @@ def run(
 
                 if sym_row:
                     body = "\n".join(lines[sym_row["line_start"] - 1 : sym_row["line_end"]])
-                    excerpt = body[:max_chars]
+                    excerpt = body[:min(max_chars, state.remaining_budget())]
                     state.register_read(file_path, excerpt)
                     db.record_action(
                         session_id=session_id,

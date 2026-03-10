@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "tessera": {
+      "command": "uvx",
+      "args": ["--from", "tessera", "tessera", "mcp"],
+      "env": {
+        "TESSERA_PROJECT_ROOT": "${workspaceFolder}"
+      }
+    }
+  }
+}
