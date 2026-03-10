@@ -66,7 +66,8 @@ def test_build_xml_roundtrip():
 
 def test_check_capabilities_no_codex(monkeypatch):
     """check_capabilities should detect missing codex gracefully."""
-    monkeypatch.setattr("shutil.which", lambda x: None)
+    monkeypatch.setattr("tessera.debate.codex.shutil.which", lambda x: None)
+    monkeypatch.setattr("tessera.debate.claude.shutil.which", lambda x: None)
     from tessera.debate.engine import check_capabilities
     caps = check_capabilities()
     assert caps["codex_cli"] is False
@@ -75,7 +76,7 @@ def test_check_capabilities_no_codex(monkeypatch):
 
 def test_codex_unavailable_raises(monkeypatch):
     """codex.run should raise CodexError if codex not on PATH."""
-    monkeypatch.setattr("shutil.which", lambda x: None)
+    monkeypatch.setattr("tessera.debate.codex.shutil.which", lambda x: None)
     from tessera.debate.codex import run, CodexError
     with pytest.raises(CodexError, match="Codex CLI not found"):
         run("test prompt")
@@ -88,7 +89,6 @@ def test_claude_unavailable_without_package():
     original = sys.modules.get("anthropic")
     sys.modules["anthropic"] = None  # type: ignore
     try:
-        from tessera.debate.claude import run, ClaudeError
         import importlib
         import tessera.debate.claude as cm
         importlib.reload(cm)

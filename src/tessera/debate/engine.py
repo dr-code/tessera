@@ -12,14 +12,12 @@ Flow:
 
 from __future__ import annotations
 
-import json
 import shutil
 from dataclasses import dataclass, field
 
 from ..core.config import DEBATE_CLAUDE_MODEL, DEBATE_MAX_ROUNDS
 from .codex import CodexError, run as codex_run
 from .claude import ClaudeError, run as claude_run
-from .payload import PlanPayload, parse_xml
 from .sanitizer import sanitize_text
 
 
@@ -164,7 +162,8 @@ def run_debate(
         return transcript
 
     if max_rounds < 3:
-        # Abbreviated: use Claude critique as final synthesis
+        # Abbreviated path: GPT round-1 plan used directly; critique is captured
+        # in transcript.claude_critique but not incorporated into a revised plan.
         transcript.final_xml = transcript.gpt_plan_r1
         return transcript
 

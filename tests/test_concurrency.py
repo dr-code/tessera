@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import threading
-import tempfile
 import time
-from pathlib import Path
 
-import pytest
 
 from tessera.core.database import Database
 
@@ -64,7 +61,7 @@ def test_concurrent_reader_and_writer(tmp_path):
     db_write = Database(str(tmp_path))
     db_read = Database(str(tmp_path))
 
-    sid = db_write.create_new_session(str(tmp_path))
+    db_write.create_new_session(str(tmp_path))
 
     read_results: list = []
     errors: list[Exception] = []

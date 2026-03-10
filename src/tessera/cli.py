@@ -49,7 +49,7 @@ def scan(path: str, full: bool) -> None:
 
     root = str(Path(path).resolve())
     db, _ = _get_db(root)
-    session_id = db.get_or_create_session(root)
+    db.get_or_create_session(root)
 
     click.echo(f"Scanning {root} ({'full' if full else 'incremental'})...")
     stats = build_graph(root, db, incremental=not full)
