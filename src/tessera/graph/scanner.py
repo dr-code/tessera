@@ -11,7 +11,7 @@ import hashlib
 import os
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import Iterator
 
 try:
     import pathspec  # type: ignore[import-untyped]
@@ -105,9 +105,17 @@ def _extract_summary(content: str, path: Path) -> str:
     if path.suffix == ".py":
         for line in lines[:20]:
             stripped = line.strip()
-            if stripped.startswith('"""') or stripped.startswith("'''"):
-                text = stripped.strip('"\' ')
-                return text[:250] if text else ""
+            for q in ('"""', "'''"):
+                if stripped.startswith(q):
+                    # Strip only the opening (and optional closing) triple-quote,
+                    # not individual quote characters from the content itself.
+                    text = stripped[len(q):]
+                    if text.endswith(q):
+                        text = text[: -len(q)]
+                    text = text.strip()
+                    if text:
+                        return text[:250]
+                    break
         for line in lines[:20]:
             stripped = line.strip()
             if stripped.startswith("#") and len(stripped) > 3:
@@ -124,7 +132,7 @@ def _extract_summary(content: str, path: Path) -> str:
                 return stripped.lstrip("/ ")[:250]
             if stripped.startswith("/*") or stripped.startswith("*"):
                 return stripped.lstrip("/* ")[:250]
-    first_non_blank = next((l.strip() for l in lines if l.strip()), "")
+    first_non_blank = next((ln.strip() for ln in lines if ln.strip()), "")
     return first_non_blank[:250]
 
 

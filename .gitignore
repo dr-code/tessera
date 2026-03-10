@@ -52,6 +52,20 @@ _ai_temp/
 # MDD working directory (docs, audit notes, reports)
 .mdd/
 
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.eggs/
+
+# Tessera runtime
+.tessera/*.db-shm
+.tessera/*.db-wal
+.tessera/plans/
+
 # Misc
 *.bak
 *.tmp

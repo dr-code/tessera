@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import json
-
 from ...core.database import Database
 from .state import TurnState
 
 
 def run(
     db: Database,
-    state: TurnState,
+    state: TurnState,  # noqa: ARG001 — kept for uniform tool signature
     session_id: str,
     query: str = "",
     limit: int = 12,

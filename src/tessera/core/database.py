@@ -7,9 +7,7 @@ dashboard, CLI) can all open separate connections safely.
 
 from __future__ import annotations
 
-import hashlib
 import json
-import os
 import sqlite3
 import time
 import uuid
@@ -295,8 +293,7 @@ class Database:
                     json.dumps(metadata or {}),
                 ),
             )
-            self._conn.commit()
-            # Enforce cap
+            # Enforce cap in the same transaction to keep it atomic and idempotent
             self._execute(
                 """
                 DELETE FROM actions WHERE session_id=?
@@ -588,41 +585,24 @@ class Database:
 
         self._retry_write(_do)
 
-    def auto_check_by_file_and_keywords(
-        self, plan_id: int, file_path: str, summary_keywords: list[str]
+    def auto_check_by_file_path(
+        self, plan_id: int, file_path: str
     ) -> list[sqlite3.Row]:
-        """Match checklist items by file_target AND keyword overlap.
+        """Match pending checklist items solely by file_target substring.
 
-        Keywords come from the stored `keywords` field first; if empty, they are
-        derived from the item `description` as a fallback so that plans saved
-        without keyword extraction (or with vague task text) can still match.
+        Only items with a non-empty file_target are considered — items with no
+        file target (verification tasks) must be completed via explicit
+        checklist_item_id.  The caller is responsible for deciding what to do
+        when multiple items match the same file (ambiguous case).
         """
-        _STOP = {
-            "a", "an", "the", "and", "or", "to", "in", "of", "for", "with",
-            "add", "new", "update", "create", "write", "make", "implement", "fix",
-        }
         rows = self._execute(
-            "SELECT * FROM plan_checklist WHERE plan_id=? AND status='pending'",
+            "SELECT * FROM plan_checklist WHERE plan_id=? AND status='pending' ORDER BY sort_order",
             (plan_id,),
         ).fetchall()
-        matched = []
-        for row in rows:
-            if row["file_target"] and row["file_target"] not in file_path:
-                continue
-            stored_kw: list = json.loads(row["keywords"] or "[]")
-            if not stored_kw:
-                stored_kw = [
-                    w.lower()
-                    for w in (row["description"] or "").replace("-", " ").split()
-                    if len(w) > 3 and w.lower() not in _STOP
-                ]
-            lower_kw = [k.lower() for k in stored_kw]
-            if not lower_kw:
-                continue
-            if not any(k.lower() in lower_kw for k in summary_keywords):
-                continue
-            matched.append(row)
-        return matched
+        return [
+            row for row in rows
+            if row["file_target"] and row["file_target"] in file_path
+        ]
 
     # ── Token savings ────────────────────────────────────────────────────────
 

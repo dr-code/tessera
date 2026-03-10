@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 
-from tessera.graph.symbol_parser import Symbol, parse_symbols, compute_body_hash
+from tessera.graph.symbol_parser import parse_symbols, compute_body_hash
 
 
 PYTHON_SOURCE = '''\
@@ -82,7 +81,6 @@ def test_parse_python_body_hash():
 
 def test_parse_js_functions():
     syms = parse_symbols(JS_SOURCE, ".js")
-    names = [s.name for s in syms]
     # At minimum regex fallback should find greet
     assert len(syms) >= 1
 

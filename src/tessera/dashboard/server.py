@@ -18,7 +18,7 @@ from ..core.config import (
 from ..core.database import Database
 
 
-def create_app(project_root: str = "") -> "Flask":  # type: ignore[name-defined]
+def create_app(project_root: str = "") -> "Flask":  # type: ignore[name-defined]  # noqa: F821
     try:
         from flask import Flask, jsonify, send_from_directory
     except ImportError:
@@ -129,6 +129,9 @@ def create_app(project_root: str = "") -> "Flask":  # type: ignore[name-defined]
                     }
                 )
         return jsonify(result)
+
+    from .routes_graph import register_graph_routes
+    register_graph_routes(app, db, root)
 
     return app
 

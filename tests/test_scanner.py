@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from tessera.graph.scanner import (
-    FileInfo,
     _classify_role,
     _content_hash,
     _extract_keywords,
