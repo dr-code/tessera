@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
+# install.sh — manual / fallback install path
+#
+# The recommended way to install tessera is via the Claude Code plugin system:
+#
+#   claude plugin marketplace add dr-code/tessera
+#   claude plugin install tessera@tessera
+#
+# That one command installs the MCP server (via uvx, no Python env needed)
+# AND auto-installs all skills (build, cleanup, debate, plan-review, codex-review).
+#
+# Use this script if you prefer a manual pip install or need a local editable install.
+
 set -e
 
-echo "Installing tessera..."
+echo "Installing tessera (manual / pip path)..."
 
 # Check Python 3.10+
 python3 -c "
@@ -24,10 +36,13 @@ pip install tessera
 
 echo ""
 echo "Done. Run 'tessera scan .' in your project to build the graph."
-echo "Then add the MCP server to your Claude Code session:"
-echo "  tessera scan .     # builds graph, writes .mcp.json and CLAUDE.md"
+echo "tessera scan writes .mcp.json and updates CLAUDE.md automatically."
+echo ""
+echo "The generated .mcp.json uses uvx to launch the MCP server:"
+echo "  uvx --from tessera tessera mcp"
+echo "No system PATH entry needed."
 
-# Optional: install Claude Code skills
+# Optional: manually install Claude Code skills
 SKILLS_DIR="${HOME}/.claude/skills"
 if [ -d "${SKILLS_DIR}" ]; then
   echo ""
@@ -41,6 +56,7 @@ if [ -d "${SKILLS_DIR}" ]; then
       echo "  installed: ${skill}"
     done
     echo "Skills installed. Restart Claude Code to pick them up."
+    echo "Note: the plugin marketplace install path does this automatically."
     echo "Requires: codex CLI (npm install -g @openai/codex)"
   fi
 fi

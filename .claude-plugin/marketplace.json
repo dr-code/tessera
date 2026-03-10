@@ -1,0 +1,27 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "tessera",
+  "description": "Persistent codebase memory — graph-guided file routing, architectural decision locking, plan tracking, and token savings via SQLite.",
+  "owner": {
+    "name": "dr-code",
+    "email": ""
+  },
+  "plugins": [
+    {
+      "name": "tessera",
+      "description": "Give Claude Code persistent memory of your codebase. Builds a SQLite graph of files, symbols, and dependencies. Routes reads to the right files, tracks decisions, and records plan progress across sessions.",
+      "version": "0.3.0",
+      "author": {
+        "name": "dr-code",
+        "email": ""
+      },
+      "source": "./",
+      "category": "development",
+      "homepage": "https://github.com/dr-code/tessera",
+      "repository": "https://github.com/dr-code/tessera",
+      "license": "MIT",
+      "keywords": ["memory", "graph", "mcp", "codebase", "context", "sqlite"],
+      "tags": ["context-management", "codebase-memory", "mcp-server", "graph"]
+    }
+  ]
+}
