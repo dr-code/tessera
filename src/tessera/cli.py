@@ -383,8 +383,8 @@ def plan_add(
     the plan visible in the dashboard.
 
     Example:
-        tessera plan-add --project onshift --subtask "add filters" \\
-            --description "Add date/status filters to the shifts table." \\
+        tessera plan-add --project my-app --subtask "add filters" \\
+            --description "Add date/status filters to the table." \\
             --task "Create FilterBar component" \\
             --task "Wire filters to API query params" \\
             --task "Write unit tests"

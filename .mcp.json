@@ -9,7 +9,7 @@
         "mcp"
       ],
       "env": {
-        "TESSERA_PROJECT_ROOT": "/Users/rutvikshah/Projects/tessera"
+        "TESSERA_PROJECT_ROOT": "."
       }
     }
   }
