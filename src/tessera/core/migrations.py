@@ -167,11 +167,28 @@ def _create_v1_tables(conn: sqlite3.Connection) -> None:
     )
 
 
+def _add_symbols_unique_index(conn: sqlite3.Connection) -> None:
+    """Add UNIQUE index on symbols(file_id, name, kind) and remove any duplicates first."""
+    conn.executescript(
+        """
+        -- Remove duplicate symbols keeping the lowest id per (file_id, name, kind)
+        DELETE FROM symbols
+        WHERE id NOT IN (
+            SELECT MIN(id) FROM symbols GROUP BY file_id, name, kind
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_symbols_unique
+            ON symbols(file_id, name, kind);
+        """
+    )
+
+
 # Registry: (target_version, migration_name, migration_fn)
 MigrationFn = Callable[[sqlite3.Connection], None]
 
 MIGRATIONS: list[tuple[int, str, MigrationFn]] = [
     (1, "initial_schema", _create_v1_tables),
+    (2, "symbols_unique_index", _add_symbols_unique_index),
 ]
 
 

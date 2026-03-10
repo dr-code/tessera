@@ -110,8 +110,8 @@ async function loadSavings() {
       labels,
       datasets: [{
         data,
-        backgroundColor: "rgba(33, 183, 177, 0.75)",
-        hoverBackgroundColor: "#1F76D2",
+        backgroundColor: "rgba(14, 107, 86, 0.75)",
+        hoverBackgroundColor: "#be5a28",
         borderRadius: 5,
         borderSkipped: false,
       }],
@@ -122,7 +122,7 @@ async function loadSavings() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: "#0B1F3A",
+          backgroundColor: "#182022",
           titleColor: "rgba(255,255,255,0.7)",
           bodyColor: "#fff",
           padding: 10,
@@ -352,6 +352,9 @@ async function refresh() {
     loadPlans(),
     loadActions(),
     loadHotFiles(),
+    loadGraphInfo(),
+    loadTokenSummary(),
+    loadGraphTree(),
   ]);
 }
 

@@ -30,6 +30,24 @@ def _get_db(project_root: str | None = None) -> tuple[Database, str]:
     return Database(root), root
 
 
+def _build_mcp_config(project_root: str) -> dict:
+    """Return the MCP server config dict for a given project root.
+
+    Uses ``uvx --from tessera tessera mcp`` so the server starts without
+    requiring tessera to be pre-installed in the active Python environment.
+    Consistent with ``.claude-plugin/.mcp.json``.
+    """
+    return {
+        "mcpServers": {
+            "tessera": {
+                "command": "uvx",
+                "args": ["--from", "tessera", "tessera", "mcp"],
+                "env": {"TESSERA_PROJECT_ROOT": project_root},
+            }
+        }
+    }
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 
 @click.group()
@@ -71,15 +89,7 @@ def scan(path: str, full: bool) -> None:
 
     # Write .mcp.json
     mcp_json = Path(root) / ".mcp.json"
-    mcp_config = {
-        "mcpServers": {
-            "tessera": {
-                "command": "tessera",
-                "args": ["mcp"],
-                "env": {"TESSERA_PROJECT_ROOT": root},
-            }
-        }
-    }
+    mcp_config = _build_mcp_config(root)
     if not mcp_json.exists():
         mcp_json.write_text(json.dumps(mcp_config, indent=2), encoding="utf-8")
         click.echo(f".mcp.json written → {mcp_json}")
