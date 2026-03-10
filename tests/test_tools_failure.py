@@ -32,7 +32,6 @@ def test_read_nonexistent_file_returns_error(empty_db):
 def test_read_budget_enforced(empty_db):
     db, sid, state, root = empty_db
     # Create a file
-    import tempfile, os
     from pathlib import Path
     f = Path(root) / "big.py"
     f.write_text("x = 1\n" * 1000, encoding="utf-8")

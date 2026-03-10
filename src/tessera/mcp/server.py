@@ -1,4 +1,4 @@
-"""Tessera MCP server — stdio transport, all 9 tools.
+"""Tessera MCP server — stdio transport, all 10 tools.
 
 Each inbound JSON-RPC request is dispatched to the appropriate tool module.
 Turn state is reset on every graph_continue call.
@@ -7,7 +7,6 @@ Turn state is reset on every graph_continue call.
 from __future__ import annotations
 
 import os
-import sys
 from pathlib import Path
 
 import mcp.server.stdio as stdio_server
@@ -25,6 +24,7 @@ from ..core.database import Database
 from .tools.state import TurnState
 from .tools import (
     continue_,
+    decision,
     edit,
     fallback,
     impact,
@@ -58,7 +58,7 @@ def _error_result(message: str) -> CallToolResult:
 def create_server() -> Server:
     project_root = _resolve_project_root()
     db = Database(project_root)
-    session_id = db.get_or_create_session(project_root)
+    session_id = db.create_new_session(project_root)
     state = TurnState()
 
     app = Server("tessera")
@@ -99,13 +99,14 @@ def create_server() -> Server:
                 Tool(
                     name="graph_read",
                     description=(
-                        "Read a file or file::symbol. Enforces turn read budget. "
+                        "Read ONE file or file::symbol per call. Enforces turn read budget. "
+                        "Call once per file — do NOT pass multiple paths or a JSON array. "
                         "Supports anchor-based excerpts."
                     ),
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "path or path::Symbol"},
+                            "path": {"type": "string", "description": "Single file path, or path::Symbol. One file per call."},
                             "max_chars": {"type": "integer", "default": 4000},
                             "query": {"type": "string", "default": ""},
                             "anchor": {"type": "string", "default": ""},
@@ -147,7 +148,9 @@ def create_server() -> Server:
                         "corresponding plan checklist item done. Pass checklist_item_id "
                         "(from graph_continue active_checklist) to mark it done directly "
                         "without text matching. Falls back to keyword matching when no ID "
-                        "is given."
+                        "is given. Pass an empty files list when completing a verification "
+                        "or observation task that does not involve a file edit — the "
+                        "checklist item will still be marked done."
                     ),
                     inputSchema={
                         "type": "object",
@@ -155,10 +158,15 @@ def create_server() -> Server:
                             "files": {
                                 "type": "array",
                                 "items": {"type": "string"},
+                                "default": [],
+                                "description": (
+                                    "Files edited. May be empty for verification-only "
+                                    "tasks when checklist_item_id is provided."
+                                ),
                             },
                             "summary": {"type": "string", "default": ""},
                             "checklist_item_id": {
-                                "type": "integer",
+                                "anyOf": [{"type": "integer"}, {"type": "string"}],
                                 "default": 0,
                                 "description": (
                                     "ID of the checklist item completed by this edit. "
@@ -168,7 +176,36 @@ def create_server() -> Server:
                                 ),
                             },
                         },
-                        "required": ["files"],
+                        "required": [],
+                    },
+                ),
+                Tool(
+                    name="graph_lock_decision",
+                    description=(
+                        "Record an architectural decision to the session database. "
+                        "Call when you identify a key design choice so it appears in "
+                        "the dashboard and future graph_continue context."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "summary": {
+                                "type": "string",
+                                "description": "One-sentence description of the decision.",
+                            },
+                            "scope": {
+                                "type": "string",
+                                "enum": ["file", "module", "project"],
+                                "default": "project",
+                            },
+                            "files": {
+                                "type": "array",
+                                "items": {"type": "string"},
+                                "default": [],
+                                "description": "File paths the decision applies to.",
+                            },
+                        },
+                        "required": ["summary"],
                     },
                 ),
                 Tool(
@@ -237,12 +274,17 @@ def create_server() -> Server:
                     top_edges=int(args.get("top_edges", 12)),
                 )
             elif name == "graph_read":
+                # Graceful fallback: if caller passed `paths` (array) instead of
+                # `path` (string), extract the first element.
+                raw_path = args.get("path") or args.get("paths", "")
+                if isinstance(raw_path, list):
+                    raw_path = raw_path[0] if raw_path else ""
                 result = read.run(
                     db=db,
                     state=state,
                     session_id=session_id,
                     project_root=project_root,
-                    file_ref=args.get("path") or args["file"],
+                    file_ref=str(raw_path),
                     max_chars=int(args.get("max_chars", 4000)),
                     query=str(args.get("query", "")),
                     anchor=str(args.get("anchor", "")),
@@ -264,7 +306,7 @@ def create_server() -> Server:
                     max_depth=int(args.get("max_depth", 3)),
                 )
             elif name == "graph_register_edit":
-                raw_files = args["files"]
+                raw_files = args.get("files", [])
                 files_list = raw_files if isinstance(raw_files, list) else [raw_files]
                 result = edit.run(
                     db=db,
@@ -273,6 +315,17 @@ def create_server() -> Server:
                     files=[str(f) for f in files_list],
                     summary=str(args.get("summary", "")),
                     checklist_item_id=int(args.get("checklist_item_id", 0)),
+                )
+            elif name == "graph_lock_decision":
+                raw_files = args.get("files", [])
+                files_list = raw_files if isinstance(raw_files, list) else []
+                result = decision.run(
+                    db=db,
+                    state=state,
+                    session_id=session_id,
+                    summary=str(args.get("summary", "")),
+                    scope=str(args.get("scope", "project")),
+                    files=[str(f) for f in files_list],
                 )
             elif name == "graph_action_summary":
                 result = summary.run(
