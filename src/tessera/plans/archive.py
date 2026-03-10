@@ -7,9 +7,6 @@ Plans are stored in both SQLite (for querying) and on-disk markdown files
 from __future__ import annotations
 
 import gzip
-import json
-import os
-import time
 from datetime import datetime
 from pathlib import Path
 
@@ -104,18 +101,18 @@ def save_plan(
     plan_dir.mkdir(parents=True, exist_ok=True)
     plan_file = plan_dir / f"plan-{timestamp}.md"
 
-    md_content = _build_plan_markdown(
-        project_name, subtask_name, task, payload, debate_summary
-    )
-    plan_file.write_text(md_content, encoding="utf-8")
-
-    # DB: save plan
+    # DB: save plan before writing disk so an orphaned file is never created
     plan_id = db.save_plan(
         subtask_id=subtask_id,
         debate_transcript=stored_transcript,
         final_plan_xml=payload.raw_xml,
         plan_file_path=str(plan_file),
     )
+
+    md_content = _build_plan_markdown(
+        project_name, subtask_name, task, payload, debate_summary
+    )
+    plan_file.write_text(md_content, encoding="utf-8")
 
     # DB: insert checklist items
     for i, t in enumerate(payload.tasks):
@@ -140,7 +137,6 @@ def list_plans(db: Database) -> list[dict]:
     for project in db.list_projects():
         subtasks = db.list_subtasks(project["id"])
         for sub in subtasks:
-            row = db.get_plan(sub["id"])  # Might be None
             result.append(
                 {
                     "project": project["name"],

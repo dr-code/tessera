@@ -1,0 +1,15 @@
+{
+  "name": "tessera",
+  "version": "0.3.0",
+  "description": "Persistent codebase memory for Claude Code — SQLite graph, 10 MCP tools, zero config.",
+  "author": {
+    "name": "dr-code",
+    "email": ""
+  },
+  "repository": "https://github.com/dr-code/tessera",
+  "homepage": "https://github.com/dr-code/tessera",
+  "license": "MIT",
+  "keywords": ["memory", "graph", "mcp", "codebase", "context", "sqlite"],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json"
+}

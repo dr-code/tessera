@@ -29,12 +29,16 @@ def _extract_py_imports(content: str) -> list[tuple[str, str]]:
     """Return list of (module_path, import_name) for Python imports."""
     results = []
     for m in _PY_IMPORT_RE.finditer(content):
-        module = m.group(1) or m.group(2)
-        if module:
-            module = module.strip().split(",")[0].strip()
-            # Convert dotted module to relative path hint
-            rel = module.replace(".", "/")
-            results.append((rel, module))
+        if m.group(1):
+            # `from package import ...` — single module
+            module = m.group(1).strip()
+            results.append((module.replace(".", "/"), module))
+        elif m.group(2):
+            # `import a, b, c` — may be multiple comma-separated modules
+            for module in m.group(2).split(","):
+                module = module.strip()
+                if module:
+                    results.append((module.replace(".", "/"), module))
     return results
 
 

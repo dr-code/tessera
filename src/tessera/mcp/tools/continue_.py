@@ -6,12 +6,8 @@ files, confidence level, and session context.
 
 from __future__ import annotations
 
-import json
-import os
-from pathlib import Path
 
 from ...core.database import Database
-from ...core.config import PROJECT_ROOT
 from ...graph.scorer import score_files, classify_intent
 from .state import TurnState
 
@@ -91,6 +87,30 @@ def run(
         confidence = "low"
         max_supplementary_greps = 3
         max_supplementary_files = 3
+
+    # Record recommendation-efficiency savings.
+    # Measure: total project chars vs. chars of recommended files only.
+    # This is visible to the MCP server regardless of which Read tool Claude uses.
+    try:
+        totals = db._execute(
+            "SELECT COUNT(*) AS n, COALESCE(SUM(size_bytes), 0) AS total FROM files"
+        ).fetchone()
+        total_chars: int = totals["total"]
+        recommended_chars: int = sum(
+            (dict(row)["size_bytes"] or 0)
+            for f in top
+            for row in [db.get_file_by_path(f["path"])]
+            if row is not None
+        )
+        db.record_token_savings(
+            session_id=session_id,
+            turn_number=state.turn_number,
+            files_skipped=max(0, totals["n"] - len(top)),
+            chars_saved=max(0, total_chars - recommended_chars),
+            chars_read_total=total_chars,
+        )
+    except Exception:
+        pass  # best-effort; never crash a turn over metrics
 
     # Record action
     db.record_action(

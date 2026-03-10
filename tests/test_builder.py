@@ -59,10 +59,10 @@ def test_build_graph_edges_extracted(db):
     build_graph(str(SAMPLE_PROJECT), db)
     # utils.py imports from main.py
     utils_row = db.get_file_by_path("utils.py")
-    if utils_row:  # path resolution may vary
-        edges = db.get_edges_from(utils_row["id"])
-        # Should have at least one edge
-        assert len(edges) >= 0  # relaxed: just verify no crash
+    assert utils_row is not None, "utils.py should be indexed after build_graph"
+    edges = db.get_edges_from(utils_row["id"])
+    assert isinstance(edges, list), "get_edges_from should return a list"
+    assert len(edges) >= 1, "utils.py should have at least one import edge"
 
 
 def test_build_graph_with_modified_file(db, tmp_path):
