@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from ...core.database import Database
@@ -14,7 +13,7 @@ _POLICY_MARKER_START = "<!-- TESSERA:START"
 _POLICY_MARKER_END = "<!-- TESSERA:END -->"
 
 _POLICY_TEMPLATE = """\
-<!-- TESSERA:START v1 -->
+<!-- TESSERA:START v2 -->
 ## Tessera Graph Policy
 
 **MANDATORY**: Call `graph_continue` as your FIRST tool call every turn.
@@ -30,6 +29,7 @@ _POLICY_TEMPLATE = """\
 - After edits: call `graph_register_edit` with file::symbol notation and summary
   - If `graph_continue` returned `active_checklist`, pass `checklist_item_id` for the item you just completed — this marks it done without keyword matching
   - If no active checklist or the edit doesn't map to a specific item, omit `checklist_item_id` (keyword fallback applies)
+- When you identify an architectural decision: call `graph_lock_decision` with a one-sentence summary, scope (`"file"` | `"module"` | `"project"`), and the files it applies to
 - Max 1 `graph_retrieve` per turn
 - No raw grep/rg/bash file reads before `graph_continue`
 <!-- TESSERA:END -->"""
@@ -54,7 +54,7 @@ def _inject_policy(claude_md_path: Path) -> None:
 
 def run(
     db: Database,
-    state: TurnState,
+    state: TurnState,  # noqa: ARG001 — kept for uniform tool signature
     session_id: str,
     project_root: str,
     incremental: bool = True,

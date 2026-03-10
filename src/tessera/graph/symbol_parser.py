@@ -12,11 +12,10 @@ from __future__ import annotations
 import ast
 import hashlib
 import re
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 
 try:
-    import tree_sitter_python as tspython  # type: ignore[import-untyped]
+    import tree_sitter_python as tspython  # type: ignore[import-untyped]  # noqa: F401
     import tree_sitter_javascript as tsjavascript  # type: ignore[import-untyped]
     import tree_sitter_typescript as tstypescript  # type: ignore[import-untyped]
     from tree_sitter import Language, Parser  # type: ignore[import-untyped]
@@ -131,11 +130,13 @@ _TS_QUERY_JS = """
 """
 
 
-def _parse_js_ts(content: str, is_typescript: bool = False) -> list[Symbol]:
+def _parse_js_ts(content: str, is_typescript: bool = False, is_tsx: bool = False) -> list[Symbol]:
     if not _HAS_TREE_SITTER:
         return _parse_js_regex(content)
     try:
-        if is_typescript:
+        if is_tsx:
+            lang_mod = tstypescript.language_tsx()
+        elif is_typescript:
             lang_mod = tstypescript.language_typescript()
         else:
             lang_mod = tsjavascript.language()
@@ -237,8 +238,10 @@ def parse_symbols(content: str, file_extension: str) -> list[Symbol]:
         return _parse_python(content)
     if ext in (".js", ".jsx"):
         return _parse_js_ts(content, is_typescript=False)
-    if ext in (".ts", ".tsx"):
+    if ext == ".ts":
         return _parse_js_ts(content, is_typescript=True)
+    if ext == ".tsx":
+        return _parse_js_ts(content, is_typescript=True, is_tsx=True)
     return []
 
 

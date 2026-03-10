@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-import json
-import os
-import tempfile
-import time
-from pathlib import Path
 
 import pytest
 
 from tessera.core.database import Database
-from tessera.core.migrations import run_migrations, MIGRATIONS
+from tessera.core.migrations import MIGRATIONS
 
 
 @pytest.fixture
@@ -22,7 +17,7 @@ def db(tmp_path):
 # ── Migration tests ─────────────────────────────────────────────────────────
 
 def test_migration_fresh_db(tmp_path):
-    db = Database(str(tmp_path))
+    Database(str(tmp_path))
     import sqlite3
     conn = sqlite3.connect(str(tmp_path / ".tessera" / "tessera.db"))
     version = conn.execute("PRAGMA user_version").fetchone()[0]
@@ -184,7 +179,7 @@ def test_decisions_rolling_window(db, tmp_path):
 # ── Retrieval cache tests ─────────────────────────────────────────────────────
 
 def test_cache_and_retrieve(db, tmp_path):
-    fid = db.upsert_file("src/a.py", ".py", "python", 100, "hash1", "", [], "code")
+    db.upsert_file("src/a.py", ".py", "python", 100, "hash1", "", [], "code")
     results = [{"path": "src/a.py", "score": 5.0}]
     db.cache_retrieval("what is auth", results, {"src/a.py": "hash1"})
     cached = db.get_cached_retrieval("what is auth")
@@ -249,23 +244,31 @@ def test_checklist_items(db):
     assert items[0]["status"] == "pending"
 
 
-def test_auto_check_by_file_and_keywords(db):
+def test_auto_check_by_file_path(db):
     pid = db.create_project("p")
     sid = db.create_subtask(pid, "s")
     plan_id = db.save_plan(sid, "", "<plan/>", "/tmp/plan.md")
-    db.add_checklist_item(plan_id, "1", "Add JWT middleware", ["jwt", "middleware"], "src/auth.py", 0)
+    db.add_checklist_item(plan_id, "1", "Add JWT middleware", ["jwt"], "src/auth.py", 0)
+    db.add_checklist_item(plan_id, "2", "Add rate limiter", [], "src/middleware.py", 1)
 
-    # Match: correct file AND keyword
-    matched = db.auto_check_by_file_and_keywords(plan_id, "src/auth.py", ["jwt"])
+    # Match: file_target is substring of edited file path
+    matched = db.auto_check_by_file_path(plan_id, "src/auth.py")
     assert len(matched) == 1
+    assert matched[0]["task_id_in_plan"] == "1"
 
-    # No match: correct file but wrong keywords
-    matched2 = db.auto_check_by_file_and_keywords(plan_id, "src/auth.py", ["unrelated"])
+    # No match: different file
+    matched2 = db.auto_check_by_file_path(plan_id, "src/other.py")
     assert len(matched2) == 0
 
-    # No match: wrong file
-    matched3 = db.auto_check_by_file_and_keywords(plan_id, "src/other.py", ["jwt"])
-    assert len(matched3) == 0
+    # Ambiguous: two items share same file target
+    db.add_checklist_item(plan_id, "3", "Extend auth tests", [], "src/auth.py", 2)
+    matched3 = db.auto_check_by_file_path(plan_id, "src/auth.py")
+    assert len(matched3) == 2
+
+    # Empty file_target items are not matched (require explicit ID)
+    db.add_checklist_item(plan_id, "4", "Verify binary", [], "", 3)
+    matched4 = db.auto_check_by_file_path(plan_id, "src/auth.py")
+    assert all(r["file_target"] != "" for r in matched4)
 
 
 # ── Token savings tests ────────────────────────────────────────────────────────

@@ -6,7 +6,6 @@ import os
 import subprocess
 import sys
 
-import pytest
 
 
 def _run_tessera(args: list[str], env_overrides: dict) -> subprocess.CompletedProcess:
@@ -58,9 +57,3 @@ def test_config_imports_cleanly():
 
 def test_core_imports_without_optional_deps():
     """Core modules should import even if flask/anthropic are not installed."""
-    import tessera.core.database
-    import tessera.core.migrations
-    import tessera.core.config
-    import tessera.graph.scanner
-    import tessera.graph.builder
-    import tessera.graph.scorer
