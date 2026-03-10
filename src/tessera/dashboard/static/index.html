@@ -11,21 +11,23 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <header class="app-header">
-    <div class="header-brand">
-      <span class="header-logo">tessera</span>
-      <span id="project-path" class="header-path"></span>
-    </div>
-    <div class="header-right">
-      <div class="live-indicator">
-        <span class="live-dot"></span>
-        live
-      </div>
-      <span id="last-updated" class="header-updated"></span>
-    </div>
-  </header>
 
   <main class="app-main">
+
+    <!-- Hero header -->
+    <header class="hero">
+      <div class="header-brand">
+        <span class="header-logo">tessera</span>
+        <span id="project-path" class="header-path"></span>
+      </div>
+      <div class="header-right">
+        <div class="live-indicator">
+          <span class="live-dot"></span>
+          live
+        </div>
+        <span id="last-updated" class="header-updated"></span>
+      </div>
+    </header>
 
     <!-- Stat cards -->
     <div class="stats-grid">
@@ -48,6 +50,53 @@
         <div class="stat-icon">&#9670;</div>
         <div class="stat-value" id="stat-sessions">—</div>
         <div class="stat-label">Sessions</div>
+      </div>
+    </div>
+
+    <!-- Live Token Monitor -->
+    <div class="live-monitor">
+      <div class="monitor-header">
+        <span class="monitor-title">Live Token Monitor</span>
+        <div class="monitor-live">
+          <span class="live-dot"></span>
+          polling every 5s
+        </div>
+      </div>
+      <div class="monitor-stats">
+        <div class="monitor-stat">
+          <div class="monitor-stat-value accent" id="monitor-saved">—</div>
+          <div class="monitor-stat-label">Chars saved</div>
+        </div>
+        <div class="monitor-stat">
+          <div class="monitor-stat-value" id="monitor-read">—</div>
+          <div class="monitor-stat-label">Chars read</div>
+        </div>
+        <div class="monitor-stat">
+          <div class="monitor-stat-value orange" id="monitor-pct">—</div>
+          <div class="monitor-stat-label">Reduction %</div>
+        </div>
+        <div class="monitor-stat">
+          <div class="monitor-stat-value" id="monitor-sessions">—</div>
+          <div class="monitor-stat-label">Sessions</div>
+        </div>
+        <div class="monitor-stat">
+          <div class="monitor-stat-value" id="monitor-entries">—</div>
+          <div class="monitor-stat-label">Events logged</div>
+        </div>
+      </div>
+      <div class="monitor-table-wrap">
+        <table class="monitor-table">
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Turn</th>
+              <th>Saved</th>
+              <th>Read total</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="monitor-tbody"></tbody>
+        </table>
       </div>
     </div>
 
@@ -86,6 +135,32 @@
           <div id="hot-files-list" class="hot-files-list"></div>
         </div>
 
+        <!-- Information Graph -->
+        <div class="card graph-info-card">
+          <div class="card-header">
+            <h2 class="card-title">Information Graph</h2>
+            <div class="graph-actions">
+              <button id="btn-scan" class="btn btn-primary">Scan Project</button>
+              <button id="btn-refresh-graph" class="btn btn-secondary">Refresh</button>
+            </div>
+          </div>
+          <div style="padding: 0.5rem 1.125rem 0;">
+            <div id="scan-status" class="scan-status"></div>
+          </div>
+          <div class="graph-table-wrap">
+            <table class="graph-nodes-table">
+              <thead>
+                <tr>
+                  <th>Path</th>
+                  <th>Ext</th>
+                  <th>Size</th>
+                </tr>
+              </thead>
+              <tbody id="graph-nodes-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
 
       <!-- Right column -->
@@ -110,7 +185,32 @@
 
     </div>
 
-    <!-- Full-width decisions -->
+    <!-- Token Usage Summary — full width -->
+    <div class="card token-summary-card">
+      <div class="card-header">
+        <h2 class="card-title">Token Usage Summary</h2>
+        <span id="token-summary-meta" class="card-meta"></span>
+      </div>
+      <div id="session-chips" class="session-chips"></div>
+      <div class="token-summary-body">
+        <div class="token-chart-wrap">
+          <canvas id="token-chart"></canvas>
+        </div>
+        <table class="token-detail-table">
+          <thead>
+            <tr>
+              <th>Session</th>
+              <th>Turn</th>
+              <th>Saved</th>
+              <th>Read</th>
+            </tr>
+          </thead>
+          <tbody id="token-detail-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Locked Decisions — full width -->
     <div class="card decisions-card">
       <div class="card-header">
         <h2 class="card-title">Locked Decisions</h2>
@@ -119,8 +219,18 @@
       <div id="decisions-list" class="decisions-grid"></div>
     </div>
 
+    <!-- Graph Tree — full width -->
+    <div class="card graph-tree-card">
+      <div class="card-header">
+        <h2 class="card-title">Graph Tree</h2>
+        <span id="graph-tree-meta" class="card-meta"></span>
+      </div>
+      <pre id="graph-tree-pre" class="graph-tree-pre">(loading...)</pre>
+    </div>
+
   </main>
 
+  <script src="sections-new.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -13,6 +13,21 @@ Tessera gives Claude Code a semantic understanding of your project that persists
 
 ## Installation
 
+### Claude Code plugin (recommended)
+
+```bash
+claude plugin marketplace add dr-code/tessera
+claude plugin install tessera@tessera
+```
+
+This registers the MCP server (via `uvx` — no Python env needed) and auto-installs all skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`). Then in any project:
+
+```bash
+tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
+```
+
+### pip (manual / CI)
+
 ```bash
 # Core (no API keys needed, no remote calls)
 pip install tessera
@@ -44,15 +59,15 @@ After `tessera scan .`, your project will have a `.mcp.json`:
 {
   "mcpServers": {
     "tessera": {
-      "command": "tessera",
-      "args": ["mcp"],
+      "command": "uvx",
+      "args": ["--from", "tessera", "tessera", "mcp"],
       "env": { "TESSERA_PROJECT_ROOT": "/path/to/project" }
     }
   }
 }
 ```
 
-Claude Code will automatically pick this up.
+`uvx` fetches and caches tessera from PyPI on first run — no PATH entry needed. Claude Code picks this up automatically.
 
 ## CLI reference
 
@@ -99,7 +114,7 @@ tessera debate "Add JWT authentication" \
 
 ## Claude Code in-session skills
 
-Tessera ships five Claude Code slash commands that use the tessera graph for context and Codex CLI for GPT's perspective. Install them via `install.sh` (prompts for confirmation) or copy manually from `skills/` to `~/.claude/skills/`.
+Tessera ships five Claude Code slash commands that use the tessera graph for context and Codex CLI for GPT's perspective. The plugin marketplace install auto-installs them from the `skills/` directory in this repo. For manual install, run `./install.sh` or copy from `skills/` to `~/.claude/skills/`.
 
 Requires: `codex` CLI on PATH (`npm install -g @openai/codex`).
 
