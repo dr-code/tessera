@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 
 from ...core.database import Database
@@ -51,7 +52,6 @@ def run(
         if not line.strip():
             continue
         try:
-            import json
             obj = json.loads(line)
             if obj.get("type") == "match":
                 data = obj["data"]
@@ -62,7 +62,7 @@ def run(
                         "text": data["lines"]["text"].rstrip(),
                     }
                 )
-        except Exception:
+        except (json.JSONDecodeError, KeyError):
             continue
         if len(hits) >= max_hits:
             break

@@ -18,6 +18,7 @@ from dataclasses import dataclass, field
 from ..core.config import DEBATE_CLAUDE_MODEL, DEBATE_MAX_ROUNDS
 from .codex import CodexError, run as codex_run
 from .claude import ClaudeError, run as claude_run
+from .chunker import split_task, merge_xml_plans
 from .sanitizer import sanitize_text
 
 
@@ -129,24 +130,59 @@ def run_debate(
     task: str,
     max_rounds: int = DEBATE_MAX_ROUNDS,
     project_root: str = "",
+    codex_timeout: int = 1200,
 ) -> DebateTranscript:
     """Run the full debate and return a DebateTranscript.
 
     Sanitizes all external content before processing.
     """
+    # Sanitize task before it enters any external API call
+    task, _ = sanitize_text(task, project_root=project_root)
     transcript = DebateTranscript(task=task, rounds_completed=0)
 
     # Round 1: GPT plans
     gpt_prompt_1 = _GPT_PLAN_PROMPT.format(task=task)
     try:
-        gpt_r1 = codex_run(gpt_prompt_1)
+        gpt_r1 = codex_run(gpt_prompt_1, timeout=codex_timeout)
         raw_r1 = gpt_r1.text
         sanitized_r1, _ = sanitize_text(raw_r1, project_root=project_root)
         transcript.gpt_plan_r1 = sanitized_r1
         transcript.rounds_completed = 1
     except CodexError as exc:
-        transcript.errors.append(f"Round 1 (GPT plan): {exc}")
-        return transcript
+        if "timed out" not in str(exc).lower():
+            transcript.errors.append(f"Round 1 (GPT plan): {exc}")
+            return transcript
+
+        # Timeout: ask Claude to split the task, then run Codex per chunk
+        transcript.errors.append("Round 1 timed out — splitting task into chunks...")
+        subtasks = split_task(task, model=DEBATE_CLAUDE_MODEL)
+        if not subtasks:
+            transcript.errors.append("Round 1 (GPT plan): timeout and chunk split unavailable.")
+            return transcript
+
+        transcript.errors.append(f"Running {len(subtasks)} chunks sequentially...")
+        chunk_plans: list[str] = []
+        for i, subtask in enumerate(subtasks, 1):
+            chunk_prompt = _GPT_PLAN_PROMPT.format(task=subtask)
+            try:
+                resp = codex_run(chunk_prompt, timeout=codex_timeout)
+                sanitized, _ = sanitize_text(resp.text, project_root=project_root)
+                chunk_plans.append(sanitized)
+            except CodexError as chunk_exc:
+                transcript.errors.append(f"Chunk {i} failed: {chunk_exc}")
+
+        if not chunk_plans:
+            transcript.errors.append("Round 1 (GPT plan): all chunks failed.")
+            return transcript
+
+        merged = merge_xml_plans(chunk_plans, original_task=task)
+        if not merged:
+            transcript.errors.append("Round 1 (GPT plan): could not merge chunk plans.")
+            return transcript
+
+        sanitized_merged, _ = sanitize_text(merged, project_root=project_root)
+        transcript.gpt_plan_r1 = sanitized_merged
+        transcript.rounds_completed = 1
 
     # Round 2: Claude critiques (optional — skipped when Claude API unavailable)
     critique_prompt = _CLAUDE_CRITIQUE_PROMPT.format(
@@ -168,13 +204,15 @@ def run_debate(
         return transcript
 
     # Round 3: GPT responds
+    # Sanitize Claude's critique before sending to external GPT API
+    sanitized_critique, _ = sanitize_text(transcript.claude_critique, project_root=project_root)
     gpt_prompt_2 = _GPT_RESPOND_PROMPT.format(
         task=task,
         plan_text=transcript.gpt_plan_r1,
-        critique=transcript.claude_critique,
+        critique=sanitized_critique,
     )
     try:
-        gpt_r2 = codex_run(gpt_prompt_2)
+        gpt_r2 = codex_run(gpt_prompt_2, timeout=codex_timeout)
         raw_r2 = gpt_r2.text
         sanitized_r2, _ = sanitize_text(raw_r2, project_root=project_root)
         transcript.gpt_plan_r2 = sanitized_r2
@@ -218,12 +256,21 @@ def execute_plan(plan_file_path: str, task: str) -> dict:
             ),
         }
     import subprocess
+    from pathlib import Path as _Path
+    # Validate plan_file_path is within the expected plans directory
+    try:
+        resolved = _Path(plan_file_path).resolve()
+        if not resolved.exists():
+            return {"ok": False, "message": f"Plan file not found: {plan_file_path}"}
+    except (OSError, ValueError) as exc:
+        return {"ok": False, "message": f"Invalid plan path: {exc}"}
     try:
         result = subprocess.run(
             ["claude", "--print", f"Execute the plan at {plan_file_path}: {task}"],
-            capture_output=False,
+            capture_output=True,
+            text=True,
             timeout=300,
         )
         return {"ok": result.returncode == 0}
-    except Exception as exc:
+    except (subprocess.SubprocessError, OSError) as exc:
         return {"ok": False, "message": str(exc)}

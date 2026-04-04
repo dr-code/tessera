@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -32,9 +33,13 @@ def _atomic_rewrite_checklist(plan_file_path: str, item_desc: str) -> None:
         new_lines.append(line)
     new_content = "".join(new_lines)
     if new_content != content:
-        tmp = str(plan_path) + ".tmp"
-        Path(tmp).write_text(new_content, encoding="utf-8")
-        os.replace(tmp, str(plan_path))
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8",
+            dir=plan_path.parent, suffix=".tmp", delete=False,
+        ) as tf:
+            tf.write(new_content)
+            tmp_path = tf.name
+        os.replace(tmp_path, str(plan_path))
 
 
 def run(

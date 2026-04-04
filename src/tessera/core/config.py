@@ -49,7 +49,6 @@ DASHBOARD_PORT: int = int(os.environ.get("TESSERA_DASHBOARD_PORT", "5050"))
 
 # Debate
 DEBATE_MAX_ROUNDS: int = int(os.environ.get("TESSERA_DEBATE_MAX_ROUNDS", "3"))
-ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
 DEBATE_CLAUDE_MODEL: str = os.environ.get(
     "TESSERA_DEBATE_MODEL", "claude-opus-4-6"
 )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -351,6 +352,7 @@ def test_graph_lock_decision_visible_in_action_summary(setup):
     assert "scope" in result["decisions"][0]
 
 
+@pytest.mark.skipif(shutil.which("rg") is None, reason="ripgrep not on PATH — install via `brew install ripgrep`")
 def test_fallback_rg_returns_real_hits(setup):
     """fallback_rg finds actual matches in the sample project."""
     db, sid, state, root = setup

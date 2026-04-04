@@ -252,6 +252,7 @@ def dashboard(path: str) -> None:
 @click.option("--yes", is_flag=True, help="Skip confirmation, auto-execute.")
 @click.option("--no-exec", is_flag=True, help="Archive plan but don't execute.")
 @click.option("--max-rounds", type=int, default=3)
+@click.option("--codex-timeout", type=int, default=1200, help="Seconds before a Codex CLI call times out (default 1200).")
 @click.argument("path", default=".")
 def debate(
     task: str,
@@ -260,6 +261,7 @@ def debate(
     yes: bool,
     no_exec: bool,
     max_rounds: int,
+    codex_timeout: int,
     path: str,
 ) -> None:
     """Run a multi-round Claude vs GPT debate and archive the resulting plan."""
@@ -293,7 +295,7 @@ def debate(
     db, _ = _get_db(root)
 
     click.echo(f"Starting debate: {task!r} ({max_rounds} rounds)...")
-    transcript = run_debate(task, max_rounds=max_rounds, project_root=root)
+    transcript = run_debate(task, max_rounds=max_rounds, project_root=root, codex_timeout=codex_timeout)
 
     if transcript.errors:
         click.echo("Debate errors:", err=True)
