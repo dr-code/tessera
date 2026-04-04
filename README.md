@@ -13,32 +13,29 @@ Tessera gives Claude Code a semantic understanding of your project that persists
 
 ## Installation
 
-### Claude Code plugin (recommended)
-
 ```bash
-claude plugin marketplace add dr-code/tessera
-claude plugin install tessera@tessera
+curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 ```
 
-This registers the MCP server (via `uvx` — no Python env needed) and auto-installs all skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`). Then in any project:
+When the `claude` CLI is present the script uses the plugin marketplace (registers the MCP server via `uvx` and installs all skills). Without it, it falls back to `pip install tessera` and offers to copy the skills to `~/.claude/skills/`.
+
+Then in any project:
 
 ```bash
 tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
 ```
 
-### pip (manual / CI)
+### Manual alternatives
 
 ```bash
-# Core (no API keys needed, no remote calls)
-pip install tessera
+# Claude Code plugin (two steps)
+claude plugin marketplace add dr-code/tessera
+claude plugin install tessera@tessera
 
-# With debate mode (requires ANTHROPIC_API_KEY + codex CLI)
-pip install tessera[debate]
-
-# With dashboard
+# pip only
+pip install tessera          # core — no API keys needed
+pip install tessera[debate]  # adds debate mode (requires ANTHROPIC_API_KEY + codex CLI)
 pip install tessera[dashboard]
-
-# Everything
 pip install tessera[all]
 ```
 
@@ -86,7 +83,22 @@ tessera dashboard [PATH]         Start dashboard at localhost:5050
 
 ## Debate mode
 
-Requires `pip install tessera[debate]`, `ANTHROPIC_API_KEY`, and `codex` CLI on PATH.
+Requires `pip install tessera[debate]` and the `codex` CLI.
+
+### Connecting to ChatGPT (no API key needed)
+
+If you have a ChatGPT Plus or Pro subscription you can authenticate the `codex` CLI with it — no separate API key or billing setup required:
+
+```bash
+npm install -g @openai/codex   # install once
+codex auth login               # opens browser — sign in with your ChatGPT account
+```
+
+That's it. `tessera debate` and all Claude Code skills (`/debate`, `/build`, `/cleanup`, etc.) will use your subscription automatically.
+
+### Connecting via API key (optional)
+
+Set `OPENAI_API_KEY` if you prefer direct API billing rather than the subscription OAuth path.
 
 ```bash
 tessera debate "Add JWT authentication" \
@@ -116,7 +128,7 @@ tessera debate "Add JWT authentication" \
 
 Tessera ships five Claude Code slash commands that use the tessera graph for context and Codex CLI for GPT's perspective. The plugin marketplace install auto-installs them from the `skills/` directory in this repo. For manual install, run `./install.sh` or copy from `skills/` to `~/.claude/skills/`.
 
-Requires: `codex` CLI on PATH (`npm install -g @openai/codex`).
+Requires: `codex` CLI (`npm install -g @openai/codex`) authenticated via `codex auth login` (ChatGPT subscription) or `OPENAI_API_KEY`.
 
 | Skill | Usage | Description |
 |---|---|---|
