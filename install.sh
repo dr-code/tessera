@@ -53,6 +53,21 @@ if [ -d "${SKILLS_DIR}" ]; then
             echo "  installed: ${skill}"
         done
         echo "Skills installed. Restart Claude Code to pick them up."
-        echo "Requires: codex CLI (npm install -g @openai/codex)"
     fi
+fi
+
+# ── Optional: connect ChatGPT subscription (no API key needed) ─────────────
+echo ""
+if command -v codex &>/dev/null; then
+    printf "Connect your ChatGPT subscription now (codex auth login)? [y/N] "
+    read -r SETUP_CODEX
+    if [ "${SETUP_CODEX}" = "y" ] || [ "${SETUP_CODEX}" = "Y" ]; then
+        codex auth login
+    fi
+else
+    echo "To enable debate mode (Claude vs GPT), install the codex CLI and sign in"
+    echo "with your ChatGPT Plus/Pro subscription — no API key required:"
+    echo ""
+    echo "  npm install -g @openai/codex"
+    echo "  codex auth login"
 fi
