@@ -13,32 +13,29 @@ Tessera gives Claude Code a semantic understanding of your project that persists
 
 ## Installation
 
-### Claude Code plugin (recommended)
-
 ```bash
-claude plugin marketplace add dr-code/tessera
-claude plugin install tessera@tessera
+curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 ```
 
-This registers the MCP server (via `uvx` — no Python env needed) and auto-installs all skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`). Then in any project:
+When the `claude` CLI is present the script uses the plugin marketplace (registers the MCP server via `uvx` and installs all skills). Without it, it falls back to `pip install tessera` and offers to copy the skills to `~/.claude/skills/`.
+
+Then in any project:
 
 ```bash
 tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
 ```
 
-### pip (manual / CI)
+### Manual alternatives
 
 ```bash
-# Core (no API keys needed, no remote calls)
-pip install tessera
+# Claude Code plugin (two steps)
+claude plugin marketplace add dr-code/tessera
+claude plugin install tessera@tessera
 
-# With debate mode (requires ANTHROPIC_API_KEY + codex CLI)
-pip install tessera[debate]
-
-# With dashboard
+# pip only
+pip install tessera          # core — no API keys needed
+pip install tessera[debate]  # adds debate mode (requires ANTHROPIC_API_KEY + codex CLI)
 pip install tessera[dashboard]
-
-# Everything
 pip install tessera[all]
 ```
 

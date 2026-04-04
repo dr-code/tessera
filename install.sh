@@ -1,38 +1,35 @@
 #!/usr/bin/env bash
-# install.sh — manual / fallback install path
+# install.sh — one-line installer for tessera
 #
-# The recommended way to install tessera is via the Claude Code plugin system:
+# Usage (recommended):
+#   curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 #
-#   claude plugin marketplace add dr-code/tessera
-#   claude plugin install tessera@tessera
-#
-# That one command installs the MCP server (via uvx, no Python env needed)
-# AND auto-installs all skills (build, cleanup, debate, plan-review, codex-review).
-#
-# Use this script if you prefer a manual pip install or need a local editable install.
+# Installs via the Claude Code plugin marketplace when the `claude` CLI is
+# present (registers MCP server + all skills automatically).  Falls back to pip
+# when running in a plain terminal or CI environment.
 
 set -e
 
-echo "Installing tessera (manual / pip path)..."
+# ── Plugin path (preferred) ─────────────────────────────────────────────────
+if command -v claude &>/dev/null; then
+    echo "Claude Code detected — installing via plugin marketplace..."
+    claude plugin marketplace add dr-code/tessera
+    claude plugin install tessera@tessera
+    echo ""
+    echo "Done.  Run 'tessera scan .' in your project to build the graph."
+    exit 0
+fi
 
-# Check Python 3.10+
+# ── pip fallback (CI / plain terminal) ─────────────────────────────────────
+echo "Installing tessera (pip path)..."
+
 python3 -c "
 import sys
 assert sys.version_info >= (3, 10), \
     f'Python 3.10+ required (found {sys.version_info.major}.{sys.version_info.minor})'
 " || exit 1
 
-# Core install (no remote calls, no API keys needed)
 pip install tessera
-
-# Optional: debate mode (requires ANTHROPIC_API_KEY + codex CLI)
-# pip install tessera[debate]
-
-# Optional: dashboard
-# pip install tessera[dashboard]
-
-# Optional: everything
-# pip install tessera[all]
 
 echo ""
 echo "Done. Run 'tessera scan .' in your project to build the graph."
@@ -42,21 +39,20 @@ echo "The generated .mcp.json uses uvx to launch the MCP server:"
 echo "  uvx --from tessera tessera mcp"
 echo "No system PATH entry needed."
 
-# Optional: manually install Claude Code skills
+# ── Optional: install Claude Code skills ────────────────────────────────────
 SKILLS_DIR="${HOME}/.claude/skills"
 if [ -d "${SKILLS_DIR}" ]; then
-  echo ""
-  printf "Install tessera Claude Code skills to %s? [y/N] " "${SKILLS_DIR}"
-  read -r INSTALL_SKILLS
-  if [ "${INSTALL_SKILLS}" = "y" ] || [ "${INSTALL_SKILLS}" = "Y" ]; then
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-    for skill in debate build cleanup plan-review codex-review; do
-      mkdir -p "${SKILLS_DIR}/${skill}"
-      cp "${SCRIPT_DIR}/skills/${skill}/SKILL.md" "${SKILLS_DIR}/${skill}/SKILL.md"
-      echo "  installed: ${skill}"
-    done
-    echo "Skills installed. Restart Claude Code to pick them up."
-    echo "Note: the plugin marketplace install path does this automatically."
-    echo "Requires: codex CLI (npm install -g @openai/codex)"
-  fi
+    echo ""
+    printf "Install tessera Claude Code skills to %s? [y/N] " "${SKILLS_DIR}"
+    read -r INSTALL_SKILLS
+    if [ "${INSTALL_SKILLS}" = "y" ] || [ "${INSTALL_SKILLS}" = "Y" ]; then
+        SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+        for skill in debate build cleanup plan-review codex-review; do
+            mkdir -p "${SKILLS_DIR}/${skill}"
+            cp "${SCRIPT_DIR}/skills/${skill}/SKILL.md" "${SKILLS_DIR}/${skill}/SKILL.md"
+            echo "  installed: ${skill}"
+        done
+        echo "Skills installed. Restart Claude Code to pick them up."
+        echo "Requires: codex CLI (npm install -g @openai/codex)"
+    fi
 fi
