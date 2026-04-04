@@ -21,7 +21,7 @@ SAMPLE_PROJECT = Path(__file__).parent / "fixtures" / "sample_project"
 def test_content_hash_consistent():
     data = b"hello world"
     assert _content_hash(data) == _content_hash(data)
-    assert len(_content_hash(data)) == 8
+    assert len(_content_hash(data)) == 16  # blake2b digest_size=8 → 16 hex chars
 
 
 def test_content_hash_differs():

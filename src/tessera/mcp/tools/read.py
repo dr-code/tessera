@@ -9,6 +9,7 @@ Supports:
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 
 from ...core.database import Database
@@ -18,7 +19,7 @@ from .state import TurnState
 
 def _body_hash_current(lines: list[str], start: int, end: int) -> str:
     body = "\n".join(lines[start - 1 : end])
-    return hashlib.md5(body.encode()).hexdigest()[:8]
+    return hashlib.sha256(body.encode()).hexdigest()[:16]
 
 
 def run(
@@ -55,15 +56,13 @@ def run(
             "fingerprint": state.seen_reads[file_path],
         }
 
-    # Resolve absolute path
-    abs_path = Path(project_root) / file_path
+    # Resolve path and enforce project_root containment
+    root_resolved = Path(project_root).resolve()
+    abs_path = (root_resolved / file_path).resolve()
+    if not str(abs_path).startswith(str(root_resolved) + os.sep) and abs_path != root_resolved:
+        return {"ok": False, "error": "Access denied: path outside project root."}
     if not abs_path.exists():
-        # Try to find by path in DB (in case path is already absolute)
-        abs_path_direct = Path(file_path)
-        if abs_path_direct.exists():
-            abs_path = abs_path_direct
-        else:
-            return {"ok": False, "error": f"File not found: {file_path}"}
+        return {"ok": False, "error": f"File not found: {file_path}"}
 
     try:
         content = abs_path.read_text(encoding="utf-8", errors="replace")

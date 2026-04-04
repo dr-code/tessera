@@ -6,8 +6,11 @@ files, confidence level, and session context.
 
 from __future__ import annotations
 
+import logging
 
 from ...core.database import Database
+
+_log = logging.getLogger(__name__)
 from ...graph.scorer import score_files, classify_intent
 from .state import TurnState
 
@@ -109,8 +112,8 @@ def run(
             chars_saved=max(0, total_chars - recommended_chars),
             chars_read_total=total_chars,
         )
-    except Exception:
-        pass  # best-effort; never crash a turn over metrics
+    except Exception as exc:
+        _log.debug("Token savings metrics failed: %s", exc)  # best-effort; never crash a turn
 
     # Record action
     db.record_action(

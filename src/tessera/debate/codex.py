@@ -25,7 +25,7 @@ def is_available() -> bool:
     return shutil.which("codex") is not None
 
 
-def run(prompt: str, timeout: int = 120) -> CodexResponse:
+def run(prompt: str, timeout: int = 1200) -> CodexResponse:
     """Send *prompt* to the Codex CLI and return its response.
 
     Raises CodexError if codex is not found, times out, or exits non-zero.

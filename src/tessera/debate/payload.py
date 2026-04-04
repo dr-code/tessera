@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import xml.etree.ElementTree as ET
+import xml.sax.saxutils as saxutils
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+
+# Matches & not already part of a valid XML entity reference.
+_UNESCAPED_AMP = re.compile(r"&(?!amp;|lt;|gt;|quot;|apos;|#\d+;|#x[0-9a-fA-F]+;)")
 
 
 @dataclass
@@ -30,10 +35,21 @@ class PlanPayload:
 
 def parse_xml(xml_text: str) -> PlanPayload | None:
     """Parse a debate plan XML string into a PlanPayload."""
+    # Strip any prose the LLM may have added before/after the XML block.
+    start = xml_text.find("<plan")
+    end = xml_text.rfind("</plan>")
+    if start != -1 and end != -1:
+        xml_text = xml_text[start : end + len("</plan>")]
+    xml_text = xml_text.strip()
     try:
-        root = ET.fromstring(xml_text.strip())
+        root = ET.fromstring(xml_text)
     except ET.ParseError:
-        return None
+        # LLMs sometimes emit unescaped & in text nodes. Repair and retry once.
+        repaired = _UNESCAPED_AMP.sub("&amp;", xml_text)
+        try:
+            root = ET.fromstring(repaired)
+        except ET.ParseError:
+            return None
 
     meta = root.find("metadata")
     task = meta.findtext("task", "") if meta is not None else ""
@@ -93,21 +109,22 @@ def build_xml(
     """Produce a canonical plan XML string."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    e = saxutils.escape
     targets_xml = "\n".join(
-        f'    <file action="{t["action"]}">{t["path"]}</file>' for t in targets
+        f'    <file action="{e(t["action"])}">{e(t["path"])}</file>' for t in targets
     )
     tasks_xml = "\n".join(
-        f'    <task id="{t.task_id}" file="{t.file}" '
-        f'keywords="{",".join(t.keywords)}"'
-        + (f' depends="{t.depends}"' if t.depends else "")
-        + f">\n      {t.description}\n    </task>"
+        f'    <task id="{t.task_id}" file="{e(t.file)}" '
+        f'keywords="{e(",".join(t.keywords))}"'
+        + (f' depends="{e(t.depends)}"' if t.depends else "")
+        + f">\n      {e(t.description)}\n    </task>"
         for t in tasks
     )
-    val_xml = "\n".join(f"    <criterion>{c}</criterion>" for c in validation)
+    val_xml = "\n".join(f"    <criterion>{e(c)}</criterion>" for c in validation)
 
     return f"""<plan>
   <metadata>
-    <task>{task}</task>
+    <task>{e(task)}</task>
     <created>{now}</created>
     <rounds>{rounds}</rounds>
     <verdict>{verdict}</verdict>

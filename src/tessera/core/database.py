@@ -147,6 +147,8 @@ class Database:
 
         self._retry_write(_do)
         row = self._execute("SELECT id FROM files WHERE path=?", (path,)).fetchone()
+        if row is None:
+            raise RuntimeError(f"upsert_file: failed to fetch id for path={path!r}")
         return row["id"]
 
     def get_file_by_path(self, path: str) -> sqlite3.Row | None:
