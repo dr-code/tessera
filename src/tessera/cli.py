@@ -33,15 +33,16 @@ def _get_db(project_root: str | None = None) -> tuple[Database, str]:
 def _build_mcp_config(project_root: str) -> dict:
     """Return the MCP server config dict for a given project root.
 
-    Uses ``uvx --from tessera tessera mcp`` so the server starts without
-    requiring tessera to be pre-installed in the active Python environment.
-    Consistent with ``.claude-plugin/.mcp.json``.
+    Uses ``tessera mcp`` directly — requires tessera to be installed in the
+    active Python environment (``pip install tessera`` or ``uv tool install``).
+    Do not use ``uvx --from tessera`` since there is a name collision with an
+    unrelated package on PyPI.
     """
     return {
         "mcpServers": {
             "tessera": {
-                "command": "uvx",
-                "args": ["--from", "tessera", "tessera", "mcp"],
+                "command": "tessera",
+                "args": ["mcp"],
                 "env": {"TESSERA_PROJECT_ROOT": project_root},
             }
         }
@@ -252,6 +253,7 @@ def dashboard(path: str) -> None:
 @click.option("--yes", is_flag=True, help="Skip confirmation, auto-execute.")
 @click.option("--no-exec", is_flag=True, help="Archive plan but don't execute.")
 @click.option("--max-rounds", type=int, default=3)
+@click.option("--codex-timeout", type=int, default=1200, help="Seconds before a Codex CLI call times out (default 1200).")
 @click.argument("path", default=".")
 def debate(
     task: str,
@@ -260,6 +262,7 @@ def debate(
     yes: bool,
     no_exec: bool,
     max_rounds: int,
+    codex_timeout: int,
     path: str,
 ) -> None:
     """Run a multi-round Claude vs GPT debate and archive the resulting plan."""
@@ -293,7 +296,7 @@ def debate(
     db, _ = _get_db(root)
 
     click.echo(f"Starting debate: {task!r} ({max_rounds} rounds)...")
-    transcript = run_debate(task, max_rounds=max_rounds, project_root=root)
+    transcript = run_debate(task, max_rounds=max_rounds, project_root=root, codex_timeout=codex_timeout)
 
     if transcript.errors:
         click.echo("Debate errors:", err=True)
@@ -383,8 +386,8 @@ def plan_add(
     the plan visible in the dashboard.
 
     Example:
-        tessera plan-add --project onshift --subtask "add filters" \\
-            --description "Add date/status filters to the shifts table." \\
+        tessera plan-add --project my-app --subtask "add filters" \\
+            --description "Add date/status filters to the table." \\
             --task "Create FilterBar component" \\
             --task "Wire filters to API query params" \\
             --task "Write unit tests"

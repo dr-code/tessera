@@ -1,8 +1,9 @@
 """Regression tests for `tessera scan` .mcp.json generation.
 
 Verifies that:
-- Generated .mcp.json uses uvx command (not bare tessera binary)
-- Args are exactly ["--from", "tessera", "tessera", "mcp"]
+- Generated .mcp.json uses `tessera` command directly (not uvx, which pulls the
+  wrong PyPI package due to a name collision)
+- Args are exactly ["mcp"]
 - TESSERA_PROJECT_ROOT is set to the scanned path
 - No-overwrite semantics: existing .mcp.json is left untouched
 """
@@ -20,16 +21,18 @@ from tessera.cli import main, _build_mcp_config
 
 # ── _build_mcp_config unit tests ─────────────────────────────────────────────
 
-def test_build_mcp_config_command_is_uvx():
+def test_build_mcp_config_command_is_tessera():
     cfg = _build_mcp_config("/tmp/proj")
     server = cfg["mcpServers"]["tessera"]
-    assert server["command"] == "uvx", "command must be 'uvx', not a bare binary path"
+    assert server["command"] == "tessera", (
+        "command must be 'tessera' — uvx pulls the wrong PyPI package"
+    )
 
 
 def test_build_mcp_config_args_exact():
     cfg = _build_mcp_config("/tmp/proj")
     server = cfg["mcpServers"]["tessera"]
-    assert server["args"] == ["--from", "tessera", "tessera", "mcp"]
+    assert server["args"] == ["mcp"]
 
 
 def test_build_mcp_config_project_root_env():
@@ -53,7 +56,7 @@ def sample_project(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_scan_writes_uvx_mcp_json(sample_project: Path) -> None:
+def test_scan_writes_tessera_mcp_json(sample_project: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(main, ["scan", str(sample_project)])
     assert result.exit_code == 0, f"scan failed: {result.output}"
@@ -63,8 +66,8 @@ def test_scan_writes_uvx_mcp_json(sample_project: Path) -> None:
 
     data = json.loads(mcp_json.read_text(encoding="utf-8"))
     server = data["mcpServers"]["tessera"]
-    assert server["command"] == "uvx"
-    assert server["args"] == ["--from", "tessera", "tessera", "mcp"]
+    assert server["command"] == "tessera"
+    assert server["args"] == ["mcp"]
     assert "TESSERA_PROJECT_ROOT" in server["env"]
 
 

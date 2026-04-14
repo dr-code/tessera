@@ -6,6 +6,7 @@ Usage:
 
 from __future__ import annotations
 
+import re
 import subprocess
 from dataclasses import dataclass, field
 
@@ -22,8 +23,13 @@ class ComplianceReport:
     extra: list[str] = field(default_factory=list)
 
 
+_SAFE_REF_RE = re.compile(r"^[A-Za-z0-9_.~^@{}/\-]+$")
+
+
 def _git_diff_files(project_root: str, base_ref: str) -> list[str]:
     """Return list of files changed vs *base_ref*."""
+    if not _SAFE_REF_RE.match(base_ref):
+        return []
     try:
         result = subprocess.run(
             ["git", "diff", "--name-only", base_ref, "HEAD"],

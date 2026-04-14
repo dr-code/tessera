@@ -49,7 +49,9 @@ def _inject_policy(claude_md_path: Path) -> None:
         content = content[:start_idx].rstrip() + "\n" + content[end_idx:].lstrip()
 
     content = content.rstrip() + "\n\n" + _POLICY_TEMPLATE + "\n"
-    claude_md_path.write_text(content, encoding="utf-8")
+    tmp = claude_md_path.with_suffix(".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, claude_md_path)
 
 
 def run(

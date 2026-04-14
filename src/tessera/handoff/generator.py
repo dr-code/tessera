@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 from datetime import datetime
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 from ..core.database import Database
 
@@ -54,8 +57,8 @@ def generate(
             try:
                 meta = json.loads(a["metadata"] or "{}")
                 edit_files.update(meta.get("files", []))
-            except Exception:
-                pass
+            except Exception as exc:
+                _log.debug("metadata parse error in handoff: %s", exc)
     files_edited = sorted(edit_files)
 
     plan_info = ""

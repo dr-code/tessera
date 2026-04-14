@@ -56,7 +56,7 @@ LANGUAGE_MAP: dict[str, str] = {
 
 
 def _content_hash(content: bytes) -> str:
-    return hashlib.md5(content).hexdigest()[:8]
+    return hashlib.blake2b(content, digest_size=8).hexdigest()
 
 
 def _load_gitignore(project_root: Path) -> "pathspec.PathSpec | None":  # type: ignore[name-defined]

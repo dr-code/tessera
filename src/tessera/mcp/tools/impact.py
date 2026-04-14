@@ -16,6 +16,9 @@ def _collect_impacted(db: Database, file_path: str, visited: set[str], depth: in
         _collect_impacted(db, edge["from_path"], visited, depth - 1)
 
 
+_MAX_DEPTH_CAP = 10
+
+
 def run(
     db: Database,
     state: TurnState,
@@ -23,6 +26,7 @@ def run(
     changed_files: list[str],
     max_depth: int = 3,
 ) -> dict:
+    max_depth = min(max_depth, _MAX_DEPTH_CAP)
     impacted: set[str] = set()
     for f in changed_files:
         _collect_impacted(db, f, impacted, max_depth)

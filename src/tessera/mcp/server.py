@@ -49,6 +49,27 @@ def _tool_result(data: dict) -> CallToolResult:
     )
 
 
+def _resolve_read_path(args: dict) -> str:
+    """Extract a single file path from graph_read arguments.
+
+    Accepts any of:
+    - ``path`` as a plain string  (standard)
+    - ``paths`` as a list          (Claude sometimes sends an array)
+    - ``paths`` as a JSON-encoded string like '["a.py","b.py"]'
+    Returns the first path found, or ``""`` if none.
+    """
+    raw = args.get("path") or args.get("paths", "")
+    if isinstance(raw, list):
+        return raw[0] if raw else ""
+    if isinstance(raw, str) and raw.startswith("["):
+        try:
+            decoded = json.loads(raw)
+            return decoded[0] if decoded else ""
+        except (json.JSONDecodeError, IndexError):
+            pass
+    return raw
+
+
 def _error_result(message: str) -> CallToolResult:
     return CallToolResult(
         content=[TextContent(type="text", text=json.dumps({"ok": False, "error": message}))]
@@ -100,18 +121,28 @@ def create_server() -> Server:
                     name="graph_read",
                     description=(
                         "Read ONE file or file::symbol per call. Enforces turn read budget. "
-                        "Call once per file — do NOT pass multiple paths or a JSON array. "
-                        "Supports anchor-based excerpts."
+                        "Pass a single path via `path`. If you pass multiple paths via `paths`, "
+                        "only the first is read. Supports anchor-based excerpts."
                     ),
                     inputSchema={
                         "type": "object",
                         "properties": {
-                            "path": {"type": "string", "description": "Single file path, or path::Symbol. One file per call."},
+                            "path": {
+                                "type": "string",
+                                "description": "Single file path, or path::Symbol. One file per call.",
+                            },
+                            "paths": {
+                                "description": "Alias accepted for compatibility. Only the first path is read.",
+                                "oneOf": [
+                                    {"type": "string"},
+                                    {"type": "array", "items": {"type": "string"}},
+                                ],
+                            },
                             "max_chars": {"type": "integer", "default": 4000},
                             "query": {"type": "string", "default": ""},
                             "anchor": {"type": "string", "default": ""},
                         },
-                        "required": ["path"],
+                        "required": [],
                     },
                 ),
                 Tool(
@@ -274,21 +305,20 @@ def create_server() -> Server:
                     top_edges=int(args.get("top_edges", 12)),
                 )
             elif name == "graph_read":
-                # Graceful fallback: if caller passed `paths` (array) instead of
-                # `path` (string), extract the first element.
-                raw_path = args.get("path") or args.get("paths", "")
-                if isinstance(raw_path, list):
-                    raw_path = raw_path[0] if raw_path else ""
-                result = read.run(
-                    db=db,
-                    state=state,
-                    session_id=session_id,
-                    project_root=project_root,
-                    file_ref=str(raw_path),
-                    max_chars=int(args.get("max_chars", 4000)),
-                    query=str(args.get("query", "")),
-                    anchor=str(args.get("anchor", "")),
-                )
+                raw_path = _resolve_read_path(args)
+                if not raw_path:
+                    result = {"ok": False, "error": "graph_read requires 'path' (single file path)"}
+                else:
+                    result = read.run(
+                        db=db,
+                        state=state,
+                        session_id=session_id,
+                        project_root=project_root,
+                        file_ref=str(raw_path),
+                        max_chars=int(args.get("max_chars", 4000)),
+                        query=str(args.get("query", "")),
+                        anchor=str(args.get("anchor", "")),
+                    )
             elif name == "graph_neighbors":
                 result = neighbors.run(
                     db=db,

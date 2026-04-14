@@ -31,7 +31,10 @@ def _decompress_transcript(text: str) -> str:
         return text
     import base64
     compressed = base64.b64decode(text[3:])
-    return gzip.decompress(compressed).decode("utf-8")
+    decompressed = gzip.decompress(compressed)
+    if len(decompressed) > MAX_DEBATE_TRANSCRIPT_BYTES * 10:
+        raise ValueError("Transcript decompressed size exceeds safety limit")
+    return decompressed.decode("utf-8")
 
 
 def _build_plan_markdown(
@@ -97,7 +100,13 @@ def save_plan(
 
     # Disk: write plan markdown
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    plan_dir = Path(project_root) / ".tessera" / "plans" / project_name / subtask_name
+    plans_base = (Path(project_root) / ".tessera" / "plans").resolve()
+    plan_dir = (plans_base / project_name / subtask_name).resolve()
+    if not str(plan_dir).startswith(str(plans_base)):
+        raise ValueError(
+            f"Invalid project/subtask name: path escapes .tessera/plans/ "
+            f"({project_name!r}, {subtask_name!r})"
+        )
     plan_dir.mkdir(parents=True, exist_ok=True)
     plan_file = plan_dir / f"plan-{timestamp}.md"
 

@@ -37,7 +37,7 @@ playwright-report/
 *~
 
 # OS
-.DS_Store
+**/.DS_Store
 Thumbs.db
 
 # Logs
@@ -62,9 +62,16 @@ __pycache__/
 .eggs/
 
 # Tessera runtime
+.tessera/tessera.db
 .tessera/*.db-shm
 .tessera/*.db-wal
 .tessera/plans/
+
+# Session transcripts (contain personal paths and project names)
+docs/transcripts/
+
+# MCP server config — machine-specific absolute paths, regenerate with `tessera scan .`
+.mcp.json
 
 # Misc
 *.bak

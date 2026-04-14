@@ -89,7 +89,10 @@ def create_app(project_root: str = "") -> "Flask":  # type: ignore[name-defined]
     def api_files_top():
         from flask import request
         session_id = request.args.get("session_id", "")
-        limit = min(int(request.args.get("limit", 10)), 50)
+        try:
+            limit = min(int(request.args.get("limit", 10)), 50)
+        except (ValueError, TypeError):
+            limit = 10
         if session_id:
             rows = db._execute(
                 "SELECT file_path, COUNT(*) AS hit_count FROM actions "
