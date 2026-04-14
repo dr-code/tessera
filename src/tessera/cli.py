@@ -33,15 +33,16 @@ def _get_db(project_root: str | None = None) -> tuple[Database, str]:
 def _build_mcp_config(project_root: str) -> dict:
     """Return the MCP server config dict for a given project root.
 
-    Uses ``uvx --from tessera tessera mcp`` so the server starts without
-    requiring tessera to be pre-installed in the active Python environment.
-    Consistent with ``.claude-plugin/.mcp.json``.
+    Uses ``tessera mcp`` directly — requires tessera to be installed in the
+    active Python environment (``pip install tessera`` or ``uv tool install``).
+    Do not use ``uvx --from tessera`` since there is a name collision with an
+    unrelated package on PyPI.
     """
     return {
         "mcpServers": {
             "tessera": {
-                "command": "uvx",
-                "args": ["--from", "tessera", "tessera", "mcp"],
+                "command": "tessera",
+                "args": ["mcp"],
                 "env": {"TESSERA_PROJECT_ROOT": project_root},
             }
         }
