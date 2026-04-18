@@ -83,16 +83,17 @@ def test_codex_unavailable_raises(monkeypatch):
 
 
 def test_claude_unavailable_without_package():
-    """claude.run should raise ClaudeError if anthropic not installed."""
+    """claude.run should raise ClaudeError if neither CLI nor anthropic SDK is available."""
     import sys
-    # Simulate missing anthropic
+    from unittest.mock import patch
+
+    # Simulate missing anthropic and missing claude CLI
     original = sys.modules.get("anthropic")
     sys.modules["anthropic"] = None  # type: ignore
     try:
-        import importlib
         import tessera.debate.claude as cm
-        importlib.reload(cm)
-        with pytest.raises((cm.ClaudeError, Exception)):
+        with patch.object(cm, "_cli_available", return_value=False), \
+             pytest.raises((cm.ClaudeError, Exception)):
             cm.run("test prompt")
     finally:
         if original is None:

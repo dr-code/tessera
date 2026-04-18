@@ -13,6 +13,21 @@ Tessera gives Claude Code a semantic understanding of your project that persists
 
 ## Installation
 
+### Claude Code plugin (recommended)
+
+```bash
+claude plugin marketplace add dr-code/tessera
+claude plugin install tessera@tessera
+```
+
+This registers the MCP server (via `uvx` — no Python env needed) and auto-installs all skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`). Then in any project:
+
+```bash
+tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
+```
+
+### pip (manual / CI)
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 ```
