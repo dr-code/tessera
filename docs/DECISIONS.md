@@ -32,6 +32,39 @@ What are the positive and negative results of this decision?
 
 ---
 
+## ADR-003: Bundle Superpowers Methodology + Plannotator Visual Review
+
+**Date:** 2026-05-08
+**Status:** Accepted
+
+### Context
+Tessera provides codebase memory (graph, plans, decisions) but had no structured development methodology and no visual plan-review workflow. Two upstream projects address these gaps: `obra/superpowers` (14 agentic methodology skills) and `backnotprop/plannotator` (visual plan approval via ExitPlanMode hooks). Rather than requiring users to install and wire three separate plugins, we integrate them into Tessera's Claude Code plugin.
+
+### Decision
+Bundle adapted Superpowers skills in `skills/` (14 files) and Plannotator hooks in `hooks/hooks.json`. Skills are adapted to inject Tessera graph tool calls (`graph_retrieve`, `graph_read`, `graph_impact`, `plan_save`) at the appropriate workflow phases. The `plan_save` MCP tool bridges the two: the `writing-plans` skill calls it to register approved plans into Tessera's DB, enabling `tessera-verify` compliance checking after implementation.
+
+### Alternatives Considered
+
+| Option | Pros | Cons |
+|--------|------|------|
+| Bundle as-is, no adaptation | Simple, low effort | Tessera graph context not used in planning |
+| Document only, no bundling | No collision risk | Not integrated, requires manual config |
+| Full absorption (port UIs) | Self-contained | Maintains forks of two active projects |
+
+### Consequences
+
+**Positive:**
+- Installing Tessera gives a complete brainstorm → plan → review → execute → verify workflow
+- Plans registered via `plan_save` are tracked by `tessera-verify` compliance checker
+- `graph_retrieve` context in `brainstorming` and `writing-plans` produces codebase-aware designs and plans
+
+**Negative:**
+- Plannotator hooks require a separate binary install (`curl | bash`)
+- Users who install standalone Plannotator plugin AND Tessera will have duplicate hooks (documented mitigation: install one or the other)
+- Upstream skill changes require a manual sync to `skills/`
+
+---
+
 ## ADR-001: TypeScript Over JavaScript
 
 **Date:** (today)

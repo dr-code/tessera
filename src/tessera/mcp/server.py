@@ -29,6 +29,7 @@ from .tools import (
     fallback,
     impact,
     neighbors,
+    plan_save,
     read,
     retrieve,
     scan,
@@ -263,6 +264,36 @@ def create_server() -> Server:
                     },
                 ),
                 Tool(
+                    name="plan_save",
+                    description=(
+                        "Archive an approved markdown plan to Tessera's DB and disk. "
+                        "Parses `- [ ]` checklist items for compliance tracking. "
+                        "Call after writing-plans skill produces an approved plan."
+                    ),
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "project_name": {
+                                "type": "string",
+                                "description": "Short project identifier, e.g. 'my-app'",
+                            },
+                            "subtask_name": {
+                                "type": "string",
+                                "description": "Feature or subtask name, e.g. 'auth-refactor'",
+                            },
+                            "task": {
+                                "type": "string",
+                                "description": "One-sentence description of what the plan builds",
+                            },
+                            "plan_markdown": {
+                                "type": "string",
+                                "description": "Full markdown content of the implementation plan",
+                            },
+                        },
+                        "required": ["project_name", "subtask_name", "task", "plan_markdown"],
+                    },
+                ),
+                Tool(
                     name="fallback_rg",
                     description="Capped ripgrep search. Max 1 call per turn.",
                     inputSchema={
@@ -372,6 +403,17 @@ def create_server() -> Server:
                     session_id=session_id,
                     project_root=args["project_root"],
                     incremental=bool(args.get("incremental", True)),
+                )
+            elif name == "plan_save":
+                result = plan_save.run(
+                    db=db,
+                    state=state,
+                    session_id=session_id,
+                    project_root=project_root,
+                    project_name=str(args.get("project_name", "")),
+                    subtask_name=str(args.get("subtask_name", "")),
+                    task=str(args.get("task", "")),
+                    plan_markdown=str(args.get("plan_markdown", "")),
                 )
             elif name == "fallback_rg":
                 result = fallback.run(

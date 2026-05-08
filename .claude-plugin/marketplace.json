@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "tessera",
-      "description": "Give Claude Code persistent memory of your codebase. Builds a SQLite graph of files, symbols, and dependencies. Routes reads to the right files, tracks decisions, and records plan progress across sessions.",
-      "version": "0.3.0",
+      "description": "Give Claude Code persistent memory of your codebase. Builds a SQLite graph of files, symbols, and dependencies. Routes reads to the right files, tracks decisions, and records plan progress across sessions. Includes the full Superpowers development methodology and Plannotator visual plan review.",
+      "version": "0.4.0",
       "author": {
         "name": "dr-code",
         "email": ""
@@ -20,8 +20,8 @@
       "homepage": "https://github.com/dr-code/tessera",
       "repository": "https://github.com/dr-code/tessera",
       "license": "MIT",
-      "keywords": ["memory", "graph", "mcp", "codebase", "context", "sqlite"],
-      "tags": ["context-management", "codebase-memory", "mcp-server", "graph"]
+      "keywords": ["memory", "graph", "mcp", "codebase", "context", "sqlite", "plan-review", "spec-driven", "tdd", "methodology"],
+      "tags": ["context-management", "codebase-memory", "mcp-server", "graph", "methodology", "tdd", "plan-review"]
     }
   ]
 }
