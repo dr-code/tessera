@@ -5,7 +5,15 @@ description: Use when receiving code review feedback, before implementing sugges
 
 # Code Review Reception
 
-<!-- From obra/superpowers — no Tessera-specific adaptation needed -->
+<!-- Adapted from obra/superpowers — Tessera graph context and edit registration added -->
+
+## Tessera Context Load
+
+**Before evaluating any feedback — if tessera MCP is configured:**
+```
+1. graph_continue (mandatory first call)
+2. graph_action_summary — surface locked decisions; flag if feedback would violate them
+```
 
 ## Overview
 
@@ -86,3 +94,16 @@ Push back when:
 ```
 
 Actions speak. Just fix it.
+
+## After Implementing Fixes
+
+**If tessera MCP is configured:** after each fix, call `graph_register_edit`:
+```
+graph_register_edit(
+  files   = ["path/to/fixed/file::symbol"],
+  summary = "<what was fixed and why>",
+  checklist_item_id = <id from active_checklist if this fix maps to a plan item>
+)
+```
+
+This keeps the graph cache current and marks plan checklist items done if the review fixes were plan-tracked.

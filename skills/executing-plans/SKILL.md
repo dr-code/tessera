@@ -41,7 +41,15 @@ For each task:
 3. Run verifications as specified
 4. **If tessera MCP is configured:** after each file edit, call `graph_register_edit`
    - Include `checklist_item_id` if `graph_continue` returned an active checklist
-5. Mark as completed
+5. When a significant architectural choice is made (pattern selected, dependency added, boundary drawn):
+   ```
+   graph_lock_decision(
+     summary = "<one sentence>",
+     scope   = "file" | "module" | "project",
+     files   = ["affected/file"]
+   )
+   ```
+6. Mark as completed
 
 ## Step 3: Complete Development
 
