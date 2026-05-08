@@ -109,3 +109,14 @@ digraph skill_flow {
 | `code-review` | Multi-model code review of current changes |
 | `tessera-verify` | Compliance check: diff vs plan targets |
 | `tessera-scan` | Rebuild Tessera's codebase graph |
+
+## Slash Commands (invoke directly with `/`)
+
+| Command | Usage |
+|---------|-------|
+| `/build <task>` | Full build pipeline: GPT plan → debate → approval → implement → verify |
+| `/codex-review [HEAD~N\|file]` | Independent GPT code review with blast-radius context |
+| `/mdd <feature>` | MDD workflow: document → test skeletons → implement → verify |
+| `/mdd audit [section]` | Audit existing code against docs, find and fix gaps |
+| `/mdd status` | Overview of MDD state: docs count, audit status, known issues |
+| `/diagram <type> [--update]` | Generate ASCII diagrams from code scan (architecture/api/database/infra) |

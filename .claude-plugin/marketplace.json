@@ -9,8 +9,8 @@
   "plugins": [
     {
       "name": "tessera",
-      "description": "Give Claude Code persistent memory of your codebase. Builds a SQLite graph of files, symbols, and dependencies. Routes reads to the right files, tracks decisions, and records plan progress across sessions. Includes the full Superpowers development methodology and Plannotator visual plan review.",
-      "version": "0.4.0",
+      "description": "Give Claude Code persistent memory of your codebase. Builds a SQLite graph of files, symbols, and dependencies. Routes reads to the right files, tracks decisions, and records plan progress across sessions. Includes the full Superpowers development methodology, Plannotator visual plan review, and slash commands for /build, /codex-review, /mdd, and /diagram.",
+      "version": "0.4.1",
       "author": {
         "name": "dr-code",
         "email": ""
