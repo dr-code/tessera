@@ -14,10 +14,18 @@ Send an implementation plan to GPT via Codex CLI for structured review before im
 
 ## Instructions
 
-### Phase 0: Load Plan
-- If a file path was provided: read it
+### Phase 0: Load Plan + Tessera Context
+
+**If tessera MCP is configured in this session:**
+```
+1. graph_continue (mandatory first call)
+2. graph_action_summary — surface locked decisions that may constrain the plan
+3. graph_retrieve with the plan's key feature terms — find relevant existing code
+```
+
+- If a file path was provided: read the plan file
 - If no path: ask the user to paste the plan or specify where it is
-- If tessera MCP is active: call `graph_retrieve` with the plan's key topics to pull relevant codebase context that GPT should be aware of
+- Include the retrieved context and any locked decisions in the GPT review prompt so it can flag contradictions with existing patterns
 
 ### Phase 1: Send to GPT
 Construct the review prompt with the full plan text and any codebase context:
@@ -48,5 +56,8 @@ For each GPT issue, Claude responds:
 **Optional Improvements:**
 [Suggestions worth considering but not blocking]
 
-If APPROVED: confirm the user is ready to proceed to implementation.
-If NEEDS REVISION: present the revised plan for user confirmation before implementation.
+If APPROVED:
+- If tessera MCP is active: call `plan_save` with `project_name`, `subtask_name`, `task`, and `plan_markdown=<full plan text>` to register the reviewed plan for compliance tracking
+- Confirm the user is ready to proceed to implementation
+
+If NEEDS REVISION: present the revised plan for user confirmation before implementation. Re-run `plan_save` after the revision is confirmed.

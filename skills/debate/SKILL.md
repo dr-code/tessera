@@ -43,8 +43,16 @@ Claude produces the final verdict:
 - Note where genuine disagreement remains
 - Issue a clear recommendation with confidence level (high / medium / low)
 
-### Phase 5: Record Decision (if tessera available)
-If tessera MCP is active, call `graph_action_summary` with the debate topic, verdict, and rationale as the summary string.
+### Phase 5: Lock Decision (if tessera available)
+If tessera MCP is active and the debate reached a clear verdict, lock it permanently:
+```
+graph_lock_decision(
+  summary = "<topic>: <verdict and rationale in one sentence>",
+  scope   = "project" | "module",
+  files   = [<files the decision applies to, if any>]
+)
+```
+This persists the debate outcome so `graph_continue` surfaces it in future turns and `graph_action_summary` can reference it. Do NOT call `graph_action_summary` to record — that is for reading history, not writing. `graph_lock_decision` is the write path.
 
 ### Output Format
 

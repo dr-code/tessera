@@ -24,6 +24,15 @@ When you have multiple unrelated failures (different test files, different subsy
 - Failures are related (fix one might fix others)
 - Agents would interfere with each other (same files, same resources)
 
+## Tessera Context Load
+
+**Before dispatching any agents — if tessera MCP is configured:**
+```
+1. graph_continue (mandatory first call for the coordinator)
+2. graph_retrieve with the failing component names as query
+```
+This routes the coordinator to the most relevant files for understanding the problem space before splitting work into agents.
+
 ## The Pattern
 
 ### 1. Identify Independent Domains
@@ -46,7 +55,10 @@ Each agent gets:
 Include the Tessera graph discipline in each agent prompt (if tessera MCP is configured):
 ```
 - Call graph_continue as your FIRST tool call
+- Call graph_retrieve with this task's key terms
+- Read recommended_files via graph_read before exploring
 - After each file edit: graph_register_edit(files=["file::symbol"], summary="...")
+- Lock architectural choices: graph_lock_decision(summary, scope, files)
 ```
 
 ### 3. Dispatch in Parallel

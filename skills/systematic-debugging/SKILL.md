@@ -58,8 +58,8 @@ You MUST complete each phase before proceeding to the next.
 
 ### Phase 2: Pattern Analysis
 
-1. **Find working examples** — similar working code in the same codebase (use `graph_retrieve` if tessera MCP configured)
-2. **Compare against references** — read the reference implementation completely
+1. **Find working examples** — use `graph_retrieve(query="<working component similar to broken one>")` if tessera MCP is configured to find similar code in the codebase
+2. **Read the reference** — use `graph_read` to read the working implementation completely, not just skim
 3. **Identify differences** — list every difference, however small
 4. **Understand dependencies** — what settings, config, environment does this need?
 
@@ -75,8 +75,16 @@ You MUST complete each phase before proceeding to the next.
 1. **Create failing test case** — use `test-driven-development` skill
 2. **Implement single fix** — address root cause, ONE change at a time
 3. **Verify fix** — test passes, no regressions, issue actually resolved
-4. **If fix doesn't work** — return to Phase 1 with new information
-5. **If 3+ fixes failed** — STOP. Question the architecture. Discuss with user.
+4. **If tessera MCP is configured:** register the fix:
+   ```
+   graph_register_edit(
+     files   = ["path/to/fixed/file::function_name"],
+     summary = "Fixed: <root cause description>",
+     checklist_item_id = <id if this maps to an active plan item>
+   )
+   ```
+5. **If fix doesn't work** — return to Phase 1 with new information
+6. **If 3+ fixes failed** — STOP. Question the architecture. Discuss with user.
 
 ## Red Flags — STOP and Follow Process
 

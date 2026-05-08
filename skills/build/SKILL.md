@@ -47,8 +47,28 @@ Present the final plan to the user via AskUserQuestion. Include:
 
 **Do NOT write any code until the user explicitly approves.**
 
+If tessera MCP is active and the user approves:
+```
+plan_save(
+  project_name = "<short project id>",
+  subtask_name = "<feature name>",
+  task         = "<one sentence from acceptance criteria>",
+  plan_markdown = "<full plan from Phase 2>"
+)
+```
+This registers the plan for `tessera-verify` compliance tracking.
+
 ### Phase 4: Implement
 Write code following the approved plan. Do not deviate from the plan without noting it.
+
+When an architectural decision is made during implementation (choosing a pattern, adding a dependency, splitting a module):
+```
+graph_lock_decision(
+  summary = "<one sentence decision>",
+  scope   = "file" | "module" | "project",
+  files   = ["path/to/affected/file"]
+)
+```
 
 ### Phase 5: Verify
 1. Run tests using the project's test command (check CLAUDE.md, package.json, or pyproject.toml for the right command)
@@ -56,6 +76,8 @@ Write code following the approved plan. Do not deviate from the plan without not
 3. Fix any failing tests before proceeding
 
 ### Phase 6: GPT Code Review
+If tessera MCP is active, call `graph_impact(changed_files=[...])` to determine blast radius before sending the diff. Include the impact map in the review prompt so GPT can flag cascading risks.
+
 Get Codex's independent review of the diff:
 
 ```bash

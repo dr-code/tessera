@@ -22,7 +22,15 @@ Get an independent GPT code review via Codex CLI. Claude evaluates each GPT find
 - If nothing found: ask the user what to review
 
 ### Phase 1: Get Context (if tessera available)
-If tessera MCP is active, call `graph_retrieve` with the names of modified files to get blast radius context — which other parts of the codebase depend on what's being changed.
+```
+1. graph_continue (mandatory first call)
+2. graph_impact(changed_files=[...list of modified files...])
+   → shows which parts of the codebase depend on what's being changed
+3. graph_read each modified file
+   → gives Claude full current file content before sending anything to GPT
+4. graph_action_summary
+   → surfaces locked architectural decisions; flag if review would violate any
+```
 
 ### Phase 2: Send to GPT
 For diffs up to ~200 lines, send in one call. For larger diffs, send one file at a time.
@@ -51,6 +59,10 @@ For each GPT finding, Claude:
 **LOW / Style — Consider:**
 [list]
 
-**Blast Radius:** [if tessera context available — what this change affects]
+**Blast Radius:** [if tessera active — what this change affects downstream]
+
+**Decision Conflicts:** [if any locked decisions conflict with this change — flag before proceeding]
 
 Ask: fix critical/high issues now?
+
+If reviewing staged changes before a commit and tessera MCP is active: run `tessera-verify` as a final gate to confirm all plan checklist items are satisfied.

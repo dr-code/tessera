@@ -15,9 +15,16 @@ Claude and GPT independently analyze code for quality issues and AI slop pattern
 ## Instructions
 
 ### Phase 0: Identify Target
-- If user specified files or a directory: use those
-- If tessera MCP is active: call `graph_retrieve` with "recently modified files" to find candidates
-- Otherwise: ask user which files to analyze
+
+**If tessera MCP is configured:**
+```
+1. graph_continue (mandatory first call)
+2. graph_retrieve("recently modified files") — find candidates
+3. graph_read each target file before analysis begins
+```
+
+- If user specified files or a directory: use those (still call `graph_read` for each)
+- If tessera not active: ask user which files to analyze
 
 Read all target files before starting analysis.
 

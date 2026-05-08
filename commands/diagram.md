@@ -29,6 +29,20 @@ Box characters: ┌ ┐ └ ┘ │ ─ ├ ┤ ┬ ┴ ┼
 Arrows: → ← ↑ ↓ ──> <──
 ```
 
+## Tessera Context Load (all diagram types)
+
+**Before scanning — if tessera MCP is configured:**
+
+```
+1. graph_continue(query="<type> diagram")  ← mandatory first call
+2. graph_retrieve(query="<type>")          ← surfaces structurally significant files
+3. graph_read recommended_files            ← reads key files before shell scanning
+4. graph_action_summary                    ← surfaces prior architectural decisions
+                                              to reflect in the diagram
+```
+
+This targets the most architecturally important files immediately, reducing the need for broad shell scans. Then supplement with the type-specific scans below for completeness.
+
 ---
 
 ## Type: `architecture`
@@ -57,7 +71,7 @@ find . -name "*.go" 2>/dev/null | grep -v "_test.go" | head -50
 grep -rn "http.HandleFunc\|r.GET\|r.POST\|http.Handle" . 2>/dev/null
 ```
 
-If tessera MCP is active, call `graph_continue` with "architecture overview" as the query, then read the `recommended_files` — this surfaces the most structurally significant files without a full scan.
+Tessera context load (see top of file) already surfaces key architectural files. Use shell scans to fill in what graph_retrieve didn't surface.
 
 ### Generate the diagram
 

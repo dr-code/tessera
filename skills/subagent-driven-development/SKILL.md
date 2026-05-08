@@ -17,6 +17,15 @@ Execute plan by dispatching fresh subagent per task, with two-stage review after
 
 Use when you have a written implementation plan with independent tasks and want to stay in the current session. For parallel-session execution, use `executing-plans` instead.
 
+## Tessera Coordinator Discipline
+
+**At the start of each dispatch round (before dispatching any subagent) — if tessera MCP is configured:**
+```
+1. graph_continue (mandatory first call for the coordinator too)
+2. graph_retrieve with the current task's key terms
+```
+This keeps the coordinator's routing accurate as files change during execution.
+
 ## Tessera Subagent Discipline
 
 **Every implementer subagent prompt you dispatch MUST include these instructions:**
@@ -24,11 +33,12 @@ Use when you have a written implementation plan with independent tasks and want 
 ```
 Tessera graph policy (if tessera MCP is configured in this session):
 1. Call graph_continue as your FIRST tool call
-2. Read all recommended_files via graph_read before exploring
-3. After each file edit, call graph_register_edit with file::symbol notation
+2. Call graph_retrieve with this task's key terms
+3. Read all recommended_files via graph_read before exploring
+4. After each file edit, call graph_register_edit with file::symbol notation
    - If graph_continue returned an active_checklist, include the checklist_item_id
      for the task you just completed
-4. Call graph_lock_decision when you make an architectural choice
+5. Call graph_lock_decision when you make an architectural choice
 ```
 
 This ensures Tessera's compliance tracker stays updated as each subagent works.
@@ -68,7 +78,14 @@ This ensures Tessera's compliance tracker stays updated as each subagent works.
 
 ### After All Tasks Complete
 
-Invoke `finishing-a-development-branch` skill.
+**If tessera MCP is configured:** run `tessera-verify` to confirm plan compliance before finishing.
+
+```
+All checklist items done? → tessera-verify passes → proceed
+Missing items? → complete them first
+```
+
+Then invoke `finishing-a-development-branch` skill.
 
 ## Subagent Prompt Template
 

@@ -206,6 +206,14 @@ For each step in the plan:
    - Go: `go test ./... -run <Feature>`
 6. Report progress: `Step N (<name>): done — <N>/<N> tests passing`
 7. If tessera MCP is active: after each file edit, call `graph_register_edit` with `file::symbol` notation
+8. When a step introduces an architectural choice (choosing a pattern, adding a dependency, splitting a module):
+   ```
+   graph_lock_decision(
+     summary = "<one sentence>",
+     scope   = "file" | "module" | "project",
+     files   = ["affected/file"]
+   )
+   ```
 
 **If a test fails, fix the implementation — NOT the test.** The tests were generated from the documentation. If the test seems wrong, re-read the doc. If the doc is wrong, ask the user.
 
@@ -259,7 +267,14 @@ If no section, audit the entire project.
 
 1. Read `docs/PROJECT_CONTEXT.md` — use as the primary feature map
 2. Fall back to scanning `docs/*.md` only if `PROJECT_CONTEXT.md` is absent
-3. If tessera MCP is active: call `graph_continue` for each feature area to surface relevant files
+3. If tessera MCP is active:
+   ```
+   1. graph_continue (mandatory first call)
+   2. graph_retrieve with the section name or "audit" as query
+   3. graph_impact(changed_files=[<source files for the section>])
+      → understand dependency chains before auditing
+      → flag which other features would be affected by issues found
+   ```
 4. If no `docs/` directory exists: create it and ask the user how to proceed
 
 ### Phase A2 — Read + Notes
