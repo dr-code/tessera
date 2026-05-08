@@ -140,6 +140,57 @@ def save_plan(
     return plan_id, str(plan_file)
 
 
+def save_raw_plan(
+    db: Database,
+    project_root: str,
+    project_name: str,
+    subtask_name: str,
+    plan_markdown: str,
+    checklist_items: list[tuple[str, str, list[str], str]],
+) -> tuple[int, str]:
+    """Save a raw markdown plan (no debate workflow) to the DB and disk.
+
+    checklist_items: list of (task_id, description, keywords, file_target).
+    Returns (plan_id, plan_file_path).
+    """
+    project_id = db.create_project(project_name)
+    subtask_id = db.create_subtask(project_id, subtask_name)
+
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+    plans_base = (Path(project_root) / ".tessera" / "plans").resolve()
+    plan_dir = (plans_base / project_name / subtask_name).resolve()
+    if not str(plan_dir).startswith(str(plans_base)):
+        raise ValueError(
+            f"Invalid project/subtask name: path escapes .tessera/plans/ "
+            f"({project_name!r}, {subtask_name!r})"
+        )
+    plan_dir.mkdir(parents=True, exist_ok=True)
+    plan_file = plan_dir / f"plan-{timestamp}.md"
+
+    plan_id = db.save_plan(
+        subtask_id=subtask_id,
+        debate_transcript="",
+        final_plan_xml="",
+        plan_file_path=str(plan_file),
+    )
+
+    plan_file.write_text(plan_markdown, encoding="utf-8")
+
+    for i, (task_id, description, keywords, file_target) in enumerate(checklist_items):
+        db.add_checklist_item(
+            plan_id=plan_id,
+            task_id_in_plan=task_id,
+            description=description,
+            keywords=keywords,
+            file_target=file_target,
+            sort_order=i,
+        )
+
+    db.update_plan_status(plan_id, "in_progress")
+
+    return plan_id, str(plan_file)
+
+
 def list_plans(db: Database) -> list[dict]:
     """List all projects, subtasks, and their plans."""
     result = []

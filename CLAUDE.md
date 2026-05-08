@@ -6,13 +6,15 @@ Tessera is an open-source Python MCP server + CLI giving Claude Code persistent 
 ## Architecture
 - `src/tessera/core/` — SQLite DB, migrations, feature flags
 - `src/tessera/graph/` — scanner, symbol parser, builder, scorer
-- `src/tessera/mcp/` — MCP server (stdio), 10 tools, turn state
+- `src/tessera/mcp/` — MCP server (stdio), 11 tools (+ plan_save), turn state
 - `src/tessera/debate/` — engine, codex wrapper, claude wrapper, DLP sanitizer, XML payload
-- `src/tessera/plans/` — plan archive (DB + disk)
+- `src/tessera/plans/` — plan archive (DB + disk); `save_raw_plan` for non-debate plans
 - `src/tessera/compliance/` — git diff vs plan targets
 - `src/tessera/handoff/` — session handoff generator
 - `src/tessera/dashboard/` — Flask dashboard, localhost:5050
 - `src/tessera/cli.py` — Click CLI entry point
+- `skills/` — 14 Superpowers skills (adapted with Tessera graph context)
+- `hooks/hooks.json` — Plannotator ExitPlanMode hooks (visual plan review)
 
 ## Key Decisions (locked)
 - Storage: SQLite with WAL mode, not JSON files
@@ -20,6 +22,41 @@ Tessera is an open-source Python MCP server + CLI giving Claude Code persistent 
 - Debate: GPT (Codex CLI subprocess) → Claude critique → GPT respond → Claude synthesize
 - Feature flags: TESSERA_ENABLE_DEBATE, TESSERA_ENABLE_DASHBOARD, TESSERA_ENABLE_COMPLIANCE
 - Core install (no debate deps): zero remote calls, no API keys needed
+- Methodology: Superpowers skills bundled in `skills/` (adapted from obra/superpowers); Plannotator hooks in `hooks/hooks.json`
+- `plan_save` MCP tool: saves raw markdown plans + parses `- [ ]` items into plan_checklist table; does NOT require debate workflow
+
+## Integrated Workflow (Superpowers + Plannotator)
+
+**Prerequisites:**
+```bash
+# Install Plannotator binary once (enables visual plan review)
+curl -fsSL https://plannotator.ai/install.sh | bash
+```
+
+**End-to-end flow:**
+```
+/brainstorming          graph_retrieve for context → design → spec doc
+  → /writing-plans      graph_read for file structure → plan + plan_save MCP tool
+    → ExitPlanMode       Plannotator visual review gate (approve/annotate/reject)
+      → /subagent-driven-development  graph_register_edit per task
+        → /requesting-code-review     multi-model review
+          → /verification-before-completion  tessera-verify compliance check
+            → /finishing-a-development-branch  tessera-verify gate + merge/PR
+```
+
+**Skills summary:**
+| Skill | Tessera adaptation |
+|---|---|
+| `brainstorming` | Phase 0: `graph_continue` + `graph_retrieve` |
+| `writing-plans` | Phase 0: graph context; end: `plan_save` MCP tool |
+| `subagent-driven-development` | Subagent prompts include graph discipline |
+| `executing-plans` | Phase 0: graph context; end: `tessera-verify` |
+| `test-driven-development` | RED: `graph_read` existing test patterns |
+| `systematic-debugging` | Phase 1: `graph_impact` blast radius |
+| `verification-before-completion` | `tessera-verify` as final gate |
+| `finishing-a-development-branch` | Phase 0: `tessera-verify` compliance gate |
+| `requesting-code-review` | Tessera `code-review` skill as primary entry |
+| Others | Passthrough from obra/superpowers |
 
 ## Development
 
