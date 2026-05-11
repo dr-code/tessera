@@ -116,6 +116,31 @@ After writing the complete plan, check against the spec:
 
 Fix inline. No need to re-review.
 
+## Phase 5.5: Codex Plan Review (Complexity Heuristic)
+
+**Auto-triggers** if ANY of:
+- Plan has >3 tasks
+- Plan modifies >5 files
+- Touches auth, payments, security, DB schema, API contracts, migrations
+- User says "debate", "codex review", or uses `--debate`
+
+**Skips** for: small plans (≤3 tasks, ≤5 files), doc-only, UI-only. Force off with `--no-debate`.
+
+When triggered, after self-review but before archiving:
+
+```bash
+codex exec "Review this implementation plan. Plan: <PLAN_MARKDOWN>. Identify: missing steps, sequencing errors, security holes, integration risks, untested edge cases. Per issue: [CRITICAL|HIGH|MED|LOW]: <issue> — <suggested fix>. End with VERDICT: approved | needs_revision."
+```
+
+1. Fix all CRITICAL and HIGH issues inline in the plan.
+2. Apply judgment to MED/LOW.
+3. Append a "Codex Review Summary" section at the end of the plan:
+   - Verdict
+   - Issues fixed
+   - Issues deferred (with reason)
+
+Then proceed to plan_save with the revised plan.
+
 ## Archive with Tessera
 
 **After the plan is written and self-reviewed — if tessera MCP is configured:**

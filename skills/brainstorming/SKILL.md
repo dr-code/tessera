@@ -13,6 +13,8 @@ Start by understanding the current project context, then ask questions one at a 
 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project, or take any implementation action until you have presented a design and the user has approved it. This applies to EVERY project regardless of perceived simplicity.
+
+If the codex debate step (4.5) is triggered, do NOT proceed to spec-writing until the debate output has been integrated or explicitly rejected.
 </HARD-GATE>
 
 ## Anti-Pattern: "This Is Too Simple To Need A Design"
@@ -27,11 +29,37 @@ You MUST create a task for each of these items and complete them in order:
 2. **Offer visual companion** (if topic will involve visual questions) — this is its own message, not combined with a clarifying question. See the Visual Companion section below.
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
+4.5. **Codex Debate** (auto-triggers — see Complexity Heuristic section below)
 5. **Present design** — in sections scaled to their complexity, get user approval after each section
 6. **Write design doc** — save to `docs/specs/YYYY-MM-DD-<topic>-design.md` and commit
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
 9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+
+## Complexity Heuristic (Codex Debate Trigger)
+
+Debate **auto-runs** (step 4.5) if ANY of:
+- Design covers >2 independent components
+- Involves auth, payments, security, database-schema changes, API contracts, migrations, or external integrations
+- User says "debate", "codex review", or "second opinion"
+- Force on with `--debate`
+
+Debate **auto-skips** for: single-file changes, pure UI tweaks, doc-only, well-established patterns.
+Force off with `--no-debate` or "skip debate".
+
+## Codex Debate (Step 4.5)
+
+When triggered, after proposing 2-3 approaches but before presenting the design:
+
+1. Send the recommended approach and trade-offs to Codex:
+   ```bash
+   codex exec "You are a senior engineer reviewing a design proposal. Proposal: <APPROACH_SUMMARY>. Project context: <BRIEF_CONTEXT>. Identify: (1) technical gaps or omissions, (2) missing edge cases, (3) security concerns, (4) better alternative approaches. Be specific — cite components and files. Output each issue as: [CRITICAL|HIGH|MED|LOW]: <issue> — <suggested fix>."
+   ```
+2. Critically evaluate Codex's feedback — GPT can be wrong or out of scope for this codebase.
+3. Integrate the 1-3 most valuable points into the design.
+4. Record under "Codex Debate Summary" in the spec doc:
+   - Points accepted (and why)
+   - Points rejected (and why)
 
 ## Tessera Context Integration
 
@@ -56,6 +84,7 @@ This surfaces relevant existing code, dependencies, and prior decisions before a
 The checklist drives the process. Key decision points:
 
 - If topic will involve visual questions → offer Visual Companion in a standalone message before clarifying questions
+- After step 4 (approaches) → evaluate complexity heuristic → run codex debate (4.5) if triggered
 - After each design section → get user approval or revise
 - After writing spec → run Spec Self-Review, then User Review Gate
 - Terminal state → invoke writing-plans skill (the ONLY skill after brainstorming)

@@ -25,30 +25,15 @@ Tessera is an open-source Python MCP server + CLI giving Claude Code persistent 
 - Methodology: Superpowers skills bundled in `skills/` (adapted from obra/superpowers); Plannotator hooks in `hooks/hooks.json`
 - `plan_save` MCP tool: saves raw markdown plans + parses `- [ ]` items into plan_checklist table; does NOT require debate workflow
 
-## Integrated Workflow (Superpowers + Plannotator)
+## Superpowers Workflow
 
-**Prerequisites:**
-```bash
-# Install Plannotator binary once (enables visual plan review)
-curl -fsSL https://plannotator.ai/install.sh | bash
-```
+Standard Superpowers + Plannotator flow is documented in `~/.claude/templates/project-claude.md` and appears in every project's CLAUDE.md. See that template for the canonical reference.
 
-**End-to-end flow:**
-```
-/brainstorming          graph_retrieve for context → design → spec doc
-  → /writing-plans      graph_read for file structure → plan + plan_save MCP tool
-    → ExitPlanMode       Plannotator visual review gate (approve/annotate/reject)
-      → /subagent-driven-development  graph_register_edit per task
-        → /requesting-code-review     multi-model review
-          → /verification-before-completion  tessera-verify compliance check
-            → /finishing-a-development-branch  tessera-verify gate + merge/PR
-```
-
-**Skills summary:**
+**Skills with Tessera-specific additions:**
 | Skill | Tessera adaptation |
 |---|---|
-| `brainstorming` | Phase 0: `graph_continue` + `graph_retrieve` |
-| `writing-plans` | Phase 0: graph context; end: `plan_save` MCP tool |
+| `brainstorming` | Phase 0: graph context; Phase 4.5: codex debate (auto-triggers for complex designs) |
+| `writing-plans` | Phase 0: graph context; Phase 5.5: codex plan review (auto-triggers); end: `plan_save` |
 | `subagent-driven-development` | Subagent prompts include graph discipline |
 | `executing-plans` | Phase 0: graph context; end: `tessera-verify` |
 | `test-driven-development` | RED: `graph_read` existing test patterns |
@@ -57,6 +42,8 @@ curl -fsSL https://plannotator.ai/install.sh | bash
 | `finishing-a-development-branch` | Phase 0: `tessera-verify` compliance gate |
 | `requesting-code-review` | Tessera `code-review` skill as primary entry |
 | Others | Passthrough from obra/superpowers |
+
+**Standard commands** are now in `~/.claude/commands/` (global) — no longer in this project's `.claude/commands/`. This project's `.claude/commands/` contains only tessera-specific commands: `diagram`, `mdd`, `review`, `show-user-guide`.
 
 ## Development
 
@@ -153,7 +140,7 @@ tessera scan .
 - One task, one chat — `/clear` between unrelated tasks
 - When testing: queue observations, fix in batch
 
-<!-- TESSERA:START v2 -->
+<!-- TESSERA:START v3 -->
 ## Tessera Graph Policy
 
 **MANDATORY**: Call `graph_continue` as your FIRST tool call every turn.
