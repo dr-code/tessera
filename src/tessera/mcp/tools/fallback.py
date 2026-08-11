@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+from pathlib import Path
 
 from ...core.database import Database
 from .state import TurnState
@@ -11,6 +13,19 @@ from .state import TurnState
 
 _MAX_GREP_CALLS = 1
 _MAX_HITS_DEFAULT = 30
+
+
+def _contained_paths(paths: list[str], project_root: str) -> list[str]:
+    """Keep only paths that resolve inside project_root; drop the rest."""
+    if not project_root:
+        return []
+    root_resolved = Path(project_root).resolve()
+    kept = []
+    for raw in paths:
+        candidate = (root_resolved / raw).resolve() if not os.path.isabs(raw) else Path(raw).resolve()
+        if candidate == root_resolved or str(candidate).startswith(str(root_resolved) + os.sep):
+            kept.append(str(candidate))
+    return kept
 
 
 def run(
@@ -32,7 +47,13 @@ def run(
 
     cmd = ["rg", "--json", f"--max-count={max_hits}", pattern]
     if paths:
-        cmd += paths
+        safe_paths = _contained_paths(paths, project_root)
+        if not safe_paths:
+            return {
+                "ok": False,
+                "error": "All requested paths are outside project_root; refusing to search.",
+            }
+        cmd += safe_paths
     elif project_root:
         cmd.append(project_root)
 

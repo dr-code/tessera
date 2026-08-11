@@ -49,6 +49,36 @@ def test_clean_text_not_modified():
     assert reasons == []
 
 
+def test_redact_unquoted_secret_with_digit():
+    text = "password: hunter2secret"
+    result, reasons = sanitize_text(text)
+    assert "[REDACTED]" in result
+    assert len(reasons) > 0
+
+
+def test_task_prose_with_keyword_colon_not_mangled():
+    """A debate task description like 'Auth: implement refresh tokens' must survive
+    untouched — the unquoted-secret pattern must not fire on prose."""
+    text = "Auth: implement refresh tokens"
+    result, reasons = sanitize_text(text)
+    assert result == text
+    assert reasons == []
+
+
+def test_task_prose_token_sentence_not_mangled():
+    text = "Token: rotate every 24h"
+    result, reasons = sanitize_text(text)
+    assert result == text
+    assert reasons == []
+
+
+def test_compound_identifier_not_treated_as_secret_keyword():
+    text = "password_reset_token = get_token()"
+    result, reasons = sanitize_text(text)
+    assert result == text
+    assert reasons == []
+
+
 def test_env_file_denied():
     result, reasons = sanitize_text("SECRET=value", source_path=".env")
     assert "REDACTED" in result

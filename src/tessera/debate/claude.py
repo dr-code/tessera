@@ -73,7 +73,7 @@ def _run_via_cli(
     full_prompt = f"{system}\n\n{prompt}" if system else prompt
     try:
         result = subprocess.run(
-            ["claude", "--print", full_prompt],
+            ["claude", "--print", "--", full_prompt],
             capture_output=True,
             text=True,
             timeout=timeout,
@@ -113,7 +113,7 @@ def _run_via_api(
     if not api_key:
         raise ClaudeError("ANTHROPIC_API_KEY not set.")
 
-    client = anthropic.Anthropic(api_key=api_key)
+    client = anthropic.Anthropic(api_key=api_key, timeout=timeout)
     messages = [{"role": "user", "content": prompt}]
     kwargs: dict = dict(model=model, max_tokens=max_tokens, messages=messages)
     if system:

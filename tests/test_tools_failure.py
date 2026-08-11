@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+import shutil
+
 import pytest
+
+from pathlib import Path
 
 from tessera.core.database import Database
 from tessera.mcp.tools.state import TurnState
 from tessera.mcp.tools import continue_, retrieve, read, edit, fallback
+from tessera.mcp.tools.fallback import _contained_paths
 
 
 @pytest.fixture
@@ -54,6 +59,58 @@ def test_fallback_rg_capped(empty_db):
     state.grep_calls = 1
     result = fallback.run(db, state, sid, "pattern", project_root=root)
     assert result["ok"] is False
+
+
+def test_fallback_rg_rejects_paths_outside_project_root(empty_db):
+    db, sid, state, root = empty_db
+    result = fallback.run(
+        db, state, sid, "pattern", paths=["/etc", "/"], project_root=root
+    )
+    assert result["ok"] is False
+    assert "outside project_root" in result["error"]
+    assert state.grep_calls == 1
+
+
+def test_contained_paths_keeps_relative_paths_inside_root(tmp_path):
+    (tmp_path / "sub").mkdir()
+    kept = _contained_paths(["sub"], str(tmp_path))
+    assert kept == [str((tmp_path / "sub").resolve())]
+
+
+def test_contained_paths_keeps_absolute_paths_inside_root(tmp_path):
+    inside = tmp_path / "sub"
+    inside.mkdir()
+    kept = _contained_paths([str(inside)], str(tmp_path))
+    assert kept == [str(inside.resolve())]
+
+
+def test_contained_paths_drops_absolute_paths_outside_root(tmp_path):
+    kept = _contained_paths(["/etc", "/"], str(tmp_path))
+    assert kept == []
+
+
+def test_contained_paths_drops_relative_escape(tmp_path):
+    kept = _contained_paths(["../../etc"], str(tmp_path))
+    assert kept == []
+
+
+def test_contained_paths_mixed_keeps_only_valid_ones(tmp_path):
+    (tmp_path / "sub").mkdir()
+    kept = _contained_paths(["sub", "/etc"], str(tmp_path))
+    assert kept == [str((tmp_path / "sub").resolve())]
+
+
+@pytest.mark.skipif(shutil.which("rg") is None, reason="ripgrep not on PATH — install via `brew install ripgrep`")
+def test_fallback_rg_keeps_paths_inside_project_root(empty_db):
+    db, sid, state, root = empty_db
+    (Path(root) / "sub").mkdir()
+    (Path(root) / "sub" / "f.py").write_text("def greet(): pass\n", encoding="utf-8")
+    result = fallback.run(
+        db, state, sid, "def greet", paths=["sub"], project_root=root
+    )
+    assert result["ok"] is True
+    assert result["total"] == 1
+    assert "f.py" in result["hits"][0]["path"]
 
 
 def test_edit_with_empty_files(empty_db):

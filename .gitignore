@@ -66,6 +66,9 @@ __pycache__/
 .tessera/*.db-shm
 .tessera/*.db-wal
 .tessera/plans/
+/tessera.db
+*.db-shm
+*.db-wal
 
 # Session transcripts (contain personal paths and project names)
 docs/transcripts/

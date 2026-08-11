@@ -266,7 +266,7 @@ def execute_plan(plan_file_path: str, task: str) -> dict:
         return {"ok": False, "message": f"Invalid plan path: {exc}"}
     try:
         result = subprocess.run(
-            ["claude", "--print", f"Execute the plan at {plan_file_path}: {task}"],
+            ["claude", "--print", "--", f"Execute the plan at {plan_file_path}: {task}"],
             capture_output=True,
             text=True,
             timeout=300,

@@ -8,7 +8,7 @@ import pytest
 
 from tessera.core.database import Database
 from tessera.debate.payload import parse_xml
-from tessera.plans.archive import save_plan, list_plans, get_plan_summary
+from tessera.plans.archive import save_plan, save_raw_plan, list_plans, get_plan_summary
 
 
 SAMPLE_XML = (Path(__file__).parent / "fixtures" / "sample_plan.xml").read_text()
@@ -88,6 +88,58 @@ def test_get_plan_summary(db, tmp_path):
     assert s is not None
     assert s["checklist_total"] == 3
     assert s["checklist_done"] == 0
+
+
+def test_save_plan_rejects_project_name_that_escapes_plans_dir(db, tmp_path):
+    """A crafted project_name sharing a prefix with 'plans' must not be treated as contained.
+
+    e.g. project_name="../plans_evil" resolves to a sibling of .tessera/plans/
+    whose name happens to start with the string "plans" — a naive str.startswith
+    check on the un-terminated prefix would wrongly accept this as "inside".
+    """
+    payload = parse_xml(SAMPLE_XML)
+    with pytest.raises(ValueError, match="escapes"):
+        save_plan(
+            db=db,
+            project_root=str(tmp_path),
+            project_name="../plans_evil",
+            subtask_name="x",
+            task="T",
+            debate_transcript_text="{}",
+            payload=payload,
+        )
+    assert not (tmp_path / ".tessera" / "plans_evil").exists()
+
+
+def test_save_raw_plan_rejects_project_name_that_escapes_plans_dir(db, tmp_path):
+    with pytest.raises(ValueError, match="escapes"):
+        save_raw_plan(
+            db=db,
+            project_root=str(tmp_path),
+            project_name="../plans_evil",
+            subtask_name="x",
+            plan_markdown="# plan",
+            checklist_items=[],
+        )
+    assert not (tmp_path / ".tessera" / "plans_evil").exists()
+
+
+def test_save_plan_writes_file_before_db_row_exists(db, tmp_path):
+    """The plan file must exist on disk by the time save_plan returns —
+    verifies the write-before-DB-insert ordering (no orphaned DB rows)."""
+    payload = parse_xml(SAMPLE_XML)
+    plan_id, plan_path = save_plan(
+        db=db,
+        project_root=str(tmp_path),
+        project_name="p",
+        subtask_name="s",
+        task="T",
+        debate_transcript_text="{}",
+        payload=payload,
+    )
+    plan = db.get_plan(plan_id)
+    assert Path(plan["plan_file_path"]).exists()
+    assert Path(plan_path).read_text(encoding="utf-8") != ""
 
 
 def test_transcript_compressed_if_large(db, tmp_path):

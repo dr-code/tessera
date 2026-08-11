@@ -77,6 +77,8 @@ def _error_result(message: str) -> CallToolResult:
     )
 
 
+
+
 def create_server() -> Server:
     project_root = _resolve_project_root()
     db = Database(project_root)
@@ -397,11 +399,15 @@ def create_server() -> Server:
                     limit=int(args.get("limit", 12)),
                 )
             elif name == "graph_scan":
+                # project_root is intentionally ignored: this server instance is bound to
+                # a single project_root for its lifetime (set at startup, used to open the
+                # DB). Honoring a caller-supplied path here would let a compromised/
+                # prompt-injected tool call point the scan at an arbitrary directory.
                 result = scan.run(
                     db=db,
                     state=state,
                     session_id=session_id,
-                    project_root=args["project_root"],
+                    project_root=project_root,
                     incremental=bool(args.get("incremental", True)),
                 )
             elif name == "plan_save":
