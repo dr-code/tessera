@@ -53,3 +53,9 @@ def test_malformed_json_falls_through_as_string():
     """Malformed JSON in paths is returned as-is (a plain string)."""
     result = _resolve_read_path({"paths": "[not valid json"})
     assert result == "[not valid json"
+
+
+# graph_scan's project_root containment is covered end-to-end in
+# test_mcp_server_integration.py (real dispatcher, not a standalone helper —
+# the fix is to ignore the caller-supplied value entirely, so there's no
+# pure function left to unit test here).

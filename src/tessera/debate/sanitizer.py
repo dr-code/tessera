@@ -16,9 +16,18 @@ from pathlib import Path
 # ── Layer 1: Regex patterns ──────────────────────────────────────────────────
 
 _SECRET_PATTERNS: list[re.Pattern] = [
-    # Generic key=value
+    # Generic key=value (quoted)
     re.compile(
         r"""(?i)(api[_-]?key|secret|password|token|auth|passwd)\s*[:=]\s*['"][^'"]{6,}['"]"""
+    ),
+    # Generic key=value (unquoted — YAML/.env/shell style, e.g. `password: hunter2secret`).
+    # \b...\b keeps this off compound identifiers (`password_reset_token`, `get_token()`).
+    # The digit-in-value lookahead keeps it off ordinary prose ("Auth: implement
+    # refresh tokens") and function calls ("secret = load_from_vault()") — real
+    # secrets in this format overwhelmingly contain a digit; a purely-alphabetic
+    # passphrase would slip through here but may still be caught by the entropy layer.
+    re.compile(
+        r"""(?i)\b(api[_-]?key|secret|password|token|auth|passwd)\b\s*[:=]\s*(?!['"])(?=\S*\d)\S{8,}"""
     ),
     # AWS
     re.compile(r"AKIA[0-9A-Z]{16}"),
@@ -26,13 +35,27 @@ _SECRET_PATTERNS: list[re.Pattern] = [
     re.compile(r"AIza[0-9A-Za-z\-_]{35}"),
     # Stripe
     re.compile(r"sk_live_[0-9a-zA-Z]{24,}"),
-    # GitHub
+    # GitHub — classic + fine-grained personal access tokens
     re.compile(r"ghp_[0-9a-zA-Z]{36}"),
     re.compile(r"gho_[0-9a-zA-Z]{36}"),
+    re.compile(r"github_pat_[0-9a-zA-Z_]{22,}"),
+    # Slack tokens
+    re.compile(r"xox[baprs]-[0-9A-Za-z-]{10,}"),
+    # npm access tokens
+    re.compile(r"npm_[0-9A-Za-z]{36}"),
+    # Generic `sk-`-prefixed API keys (OpenAI-style and similar)
+    re.compile(r"sk-[0-9A-Za-z]{20,}"),
+    # PEM-format private key blocks
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
     # Generic bearer
     re.compile(r"Bearer\s+[A-Za-z0-9\-._~+/]{20,}"),
     # Connection strings
     re.compile(r"(?i)(mongodb|postgres|mysql|redis)://[^\s'\"]+:[^\s'\"]+@"),
+    # Absolute home directories (Unix + Windows) — local usernames/paths
+    re.compile(r"(?:/Users/|/home/)[^/\s'\"]+"),
+    re.compile(r"C:\\Users\\[^\\\s'\"]+"),
+    # Email addresses
+    re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"),
 ]
 
 # ── Layer 2: Entropy threshold ───────────────────────────────────────────────
@@ -161,7 +184,12 @@ def sanitize_text(
 
 
 def check_file_allowed(path: str, project_root: str = "") -> tuple[bool, str]:
-    """Return (allowed, reason). Denied files must not be sent externally."""
+    """Return (allowed, reason). Denied files must not be sent externally.
+
+    Only takes effect for callers that pass a real `source_path`/`path` — the
+    current debate flow sanitizes free-text task/critique strings and does not
+    yet ingest raw file contents by path, so this check has no live caller today.
+    """
     if _is_denied_file(path):
         return False, f"File type/name denied: {path}"
     if project_root:

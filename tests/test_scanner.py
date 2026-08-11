@@ -79,6 +79,34 @@ def test_scan_file_missing_returns_none(tmp_path):
     assert result is None
 
 
+def test_scan_file_refuses_symlink_escaping_project_root(tmp_path):
+    project_root = tmp_path / "project"
+    project_root.mkdir()
+    outside = tmp_path / "outside.py"
+    outside.write_text("SECRET = 'do-not-index-this'\n", encoding="utf-8")
+    link = project_root / "config.py"
+    link.symlink_to(outside)
+
+    result = scan_file(link, project_root)
+
+    assert result is None, "symlink pointing outside project_root must not be scanned"
+    assert not outside.read_text(encoding="utf-8") in str(result)
+
+
+def test_scan_file_allows_symlink_inside_project_root(tmp_path):
+    project_root = tmp_path
+    real = project_root / "real.py"
+    real.write_text("def inside(): pass\n", encoding="utf-8")
+    link = project_root / "alias.py"
+    link.symlink_to(real)
+
+    result = scan_file(link, project_root)
+
+    assert result is not None
+    assert result.path == "alias.py"
+    assert "inside" in result.keywords
+
+
 def test_walk_project_finds_files():
     infos = list(walk_project(str(SAMPLE_PROJECT)))
     paths = [i.path for i in infos]

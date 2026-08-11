@@ -130,6 +130,11 @@ tessera debate "Add JWT authentication" \
 | `TESSERA_ENABLE_DASHBOARD` | on | Enables `tessera dashboard` |
 | `TESSERA_ENABLE_COMPLIANCE` | on | Enables `tessera verify` |
 
+The dashboard binds to `127.0.0.1` by default and has no authentication. If you
+set `TESSERA_DASHBOARD_HOST=0.0.0.0` for LAN access, every `/api/*` route
+(project graph, plans, locked decisions) becomes reachable to anyone on the
+network with no login required — only do this on a trusted network.
+
 ## Token savings target
 
 | Metric | Target |

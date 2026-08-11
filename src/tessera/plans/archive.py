@@ -7,12 +7,31 @@ Plans are stored in both SQLite (for querying) and on-disk markdown files
 from __future__ import annotations
 
 import gzip
+import os
 from datetime import datetime
 from pathlib import Path
 
 from ..core.database import Database
 from ..core.config import MAX_DEBATE_TRANSCRIPT_BYTES
 from ..debate.payload import PlanPayload
+
+
+def _resolve_plan_dir(project_root: str, project_name: str, subtask_name: str) -> tuple[Path, Path]:
+    """Resolve the plan directory, rejecting names that escape .tessera/plans/."""
+    plans_base = (Path(project_root) / ".tessera" / "plans").resolve()
+    plan_dir = (plans_base / project_name / subtask_name).resolve()
+    if plan_dir != plans_base and not str(plan_dir).startswith(str(plans_base) + os.sep):
+        raise ValueError(
+            f"Invalid project/subtask name: path escapes .tessera/plans/ "
+            f"({project_name!r}, {subtask_name!r})"
+        )
+    return plans_base, plan_dir
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(content, encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _compress_transcript(text: str) -> str:
@@ -98,30 +117,24 @@ def save_plan(
     # Compress transcript if needed
     stored_transcript = _compress_transcript(debate_transcript_text)
 
-    # Disk: write plan markdown
+    # Disk: write plan markdown atomically first, so the DB never references
+    # a plan_file_path that doesn't exist or is only partially written.
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    plans_base = (Path(project_root) / ".tessera" / "plans").resolve()
-    plan_dir = (plans_base / project_name / subtask_name).resolve()
-    if not str(plan_dir).startswith(str(plans_base)):
-        raise ValueError(
-            f"Invalid project/subtask name: path escapes .tessera/plans/ "
-            f"({project_name!r}, {subtask_name!r})"
-        )
+    _plans_base, plan_dir = _resolve_plan_dir(project_root, project_name, subtask_name)
     plan_dir.mkdir(parents=True, exist_ok=True)
     plan_file = plan_dir / f"plan-{timestamp}.md"
 
-    # DB: save plan before writing disk so an orphaned file is never created
+    md_content = _build_plan_markdown(
+        project_name, subtask_name, task, payload, debate_summary
+    )
+    _atomic_write(plan_file, md_content)
+
     plan_id = db.save_plan(
         subtask_id=subtask_id,
         debate_transcript=stored_transcript,
         final_plan_xml=payload.raw_xml,
         plan_file_path=str(plan_file),
     )
-
-    md_content = _build_plan_markdown(
-        project_name, subtask_name, task, payload, debate_summary
-    )
-    plan_file.write_text(md_content, encoding="utf-8")
 
     # DB: insert checklist items
     for i, t in enumerate(payload.tasks):
@@ -157,15 +170,11 @@ def save_raw_plan(
     subtask_id = db.create_subtask(project_id, subtask_name)
 
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    plans_base = (Path(project_root) / ".tessera" / "plans").resolve()
-    plan_dir = (plans_base / project_name / subtask_name).resolve()
-    if not str(plan_dir).startswith(str(plans_base)):
-        raise ValueError(
-            f"Invalid project/subtask name: path escapes .tessera/plans/ "
-            f"({project_name!r}, {subtask_name!r})"
-        )
+    _plans_base, plan_dir = _resolve_plan_dir(project_root, project_name, subtask_name)
     plan_dir.mkdir(parents=True, exist_ok=True)
     plan_file = plan_dir / f"plan-{timestamp}.md"
+
+    _atomic_write(plan_file, plan_markdown)
 
     plan_id = db.save_plan(
         subtask_id=subtask_id,
@@ -173,8 +182,6 @@ def save_raw_plan(
         final_plan_xml="",
         plan_file_path=str(plan_file),
     )
-
-    plan_file.write_text(plan_markdown, encoding="utf-8")
 
     for i, (task_id, description, keywords, file_target) in enumerate(checklist_items):
         db.add_checklist_item(

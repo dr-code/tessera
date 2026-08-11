@@ -37,7 +37,7 @@ def run(prompt: str, timeout: int = 1200) -> CodexResponse:
         )
     try:
         result = subprocess.run(
-            ["codex", "exec", prompt],
+            ["codex", "exec", "--", prompt],
             capture_output=True,
             text=True,
             timeout=timeout,

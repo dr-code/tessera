@@ -199,6 +199,11 @@ class FileInfo:
 
 def scan_file(path: Path, project_root: Path) -> FileInfo | None:
     """Scan a single file and return a FileInfo, or None on read error."""
+    root_resolved = project_root.resolve()
+    resolved = path.resolve()
+    if resolved != root_resolved and not str(resolved).startswith(str(root_resolved) + os.sep):
+        # Symlink (or other indirection) points outside project_root — refuse to read it.
+        return None
     try:
         raw = path.read_bytes()
     except OSError:
