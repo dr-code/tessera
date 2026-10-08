@@ -12,6 +12,11 @@
   "keywords": ["memory", "graph", "mcp", "codebase", "context", "sqlite", "plan-review", "spec-driven", "tdd", "methodology"],
   "skills": "./skills/",
   "commands": "./commands/",
-  "mcpServers": "./.mcp.json",
-  "hooks": "./hooks/"
+  "mcpServers": {
+    "tessera": {
+      "command": "tessera",
+      "args": ["mcp"]
+    }
+  },
+  "hooks": "./hooks/hooks.json"
 }
