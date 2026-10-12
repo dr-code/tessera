@@ -4,15 +4,45 @@
 # Usage (recommended):
 #   curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 #
-# Installs via the Claude Code plugin marketplace when the `claude` CLI is
-# present (registers MCP server + all skills automatically).  Falls back to pip
-# when running in a plain terminal or CI environment.
+# 1. Installs the `tessera` command from GitHub. (The name "tessera" on PyPI is
+#    an unrelated project, so installing it by name gets the wrong software.)
+# 2. When the `claude` CLI is present, installs the Claude Code plugin, which
+#    adds the skills, slash commands and Plannotator hooks and registers an MCP
+#    server that runs the `tessera` command from step 1.
 
 set -e
 
-# ── Plugin path (preferred) ─────────────────────────────────────────────────
+REPO_URL="git+https://github.com/dr-code/tessera"
+
+# ── 1. The tessera command ─────────────────────────────────────────────────
+python3 -c "
+import sys
+assert sys.version_info >= (3, 10), \
+    f'Python 3.10+ required (found {sys.version_info.major}.{sys.version_info.minor})'
+" || exit 1
+
+if command -v pipx &>/dev/null; then
+    echo "Installing the tessera command with pipx..."
+    pipx install --force "${REPO_URL}"
+elif command -v uv &>/dev/null; then
+    echo "Installing the tessera command with uv..."
+    uv tool install --force "${REPO_URL}"
+else
+    echo "Installing the tessera command with pip (user install)..."
+    python3 -m pip install --user --upgrade "${REPO_URL}"
+    echo "Make sure your user scripts folder is on PATH (for example ~/.local/bin)."
+fi
+
+if ! command -v tessera &>/dev/null; then
+    echo ""
+    echo "Installed, but 'tessera' is not on your PATH yet. Open a new terminal or add"
+    echo "the folder printed above to PATH, then run 'tessera --version' to check."
+fi
+
+# ── 2. Claude Code plugin (when the claude CLI is present) ──────────────────
 if command -v claude &>/dev/null; then
-    echo "Claude Code detected — installing via plugin marketplace..."
+    echo ""
+    echo "Claude Code detected — installing the plugin..."
     claude plugin marketplace add dr-code/tessera
     claude plugin install tessera@tessera
     echo ""
@@ -20,24 +50,9 @@ if command -v claude &>/dev/null; then
     exit 0
 fi
 
-# ── pip fallback (CI / plain terminal) ─────────────────────────────────────
-echo "Installing tessera (pip path)..."
-
-python3 -c "
-import sys
-assert sys.version_info >= (3, 10), \
-    f'Python 3.10+ required (found {sys.version_info.major}.{sys.version_info.minor})'
-" || exit 1
-
-pip install tessera
-
 echo ""
 echo "Done. Run 'tessera scan .' in your project to build the graph."
-echo "tessera scan writes .mcp.json and updates CLAUDE.md automatically."
-echo ""
-echo "The generated .mcp.json uses uvx to launch the MCP server:"
-echo "  uvx --from tessera tessera mcp"
-echo "No system PATH entry needed."
+echo "tessera scan writes .mcp.json (the MCP server runs 'tessera mcp') and updates CLAUDE.md."
 
 # ── Optional: install Claude Code skills ────────────────────────────────────
 SKILLS_DIR="${HOME}/.claude/skills"

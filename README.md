@@ -13,46 +13,41 @@ Tessera gives Claude Code a semantic understanding of your project that persists
 
 ## Installation
 
-### Claude Code plugin (recommended)
+Tessera is installed from GitHub. The name `tessera` on PyPI belongs to an unrelated project (a dashboard for Graphite), so installing it from PyPI by name gets the wrong software.
+
+### 1. Install the `tessera` command
+
+```bash
+pipx install git+https://github.com/dr-code/tessera
+# or: uv tool install git+https://github.com/dr-code/tessera
+```
+
+Optional extras (debate mode, dashboard):
+
+```bash
+pipx install "tessera[all] @ git+https://github.com/dr-code/tessera"
+```
+
+### 2. Claude Code plugin (recommended)
 
 ```bash
 claude plugin marketplace add dr-code/tessera
 claude plugin install tessera@tessera
 ```
 
-This registers the MCP server (via `uvx` — no Python env needed) and auto-installs all skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`). Then in any project:
+The plugin adds the skills (`/build`, `/debate`, `/cleanup`, `/plan-review`, `/codex-review`), the Superpowers methodology, the Plannotator plan-review hooks, and an MCP server that runs the `tessera` command from step 1. Then in any project:
 
 ```bash
 tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
 ```
 
-### pip (manual / CI)
+### One-line installer
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/dr-code/tessera/main/install.sh | bash
 ```
 
-When the `claude` CLI is present the script uses the plugin marketplace (registers the MCP server via `uvx` and installs all skills). Without it, it falls back to `pip install tessera` and offers to copy the skills to `~/.claude/skills/`.
-
-Then in any project:
-
-```bash
-tessera scan .          # builds graph, writes .mcp.json and CLAUDE.md
-```
-
-### Manual alternatives
-
-```bash
-# Claude Code plugin (two steps)
-claude plugin marketplace add dr-code/tessera
-claude plugin install tessera@tessera
-
-# pip only
-pip install tessera          # core — no API keys needed
-pip install tessera[debate]  # adds debate mode (requires ANTHROPIC_API_KEY + codex CLI)
-pip install tessera[dashboard]
-pip install tessera[all]
-```
+Does both steps: installs the command with pipx (or uv, or pip as a last resort), then the plugin when the `claude` CLI is present.
 
 ## Quick start
 
@@ -71,15 +66,15 @@ After `tessera scan .`, your project will have a `.mcp.json`:
 {
   "mcpServers": {
     "tessera": {
-      "command": "uvx",
-      "args": ["--from", "tessera", "tessera", "mcp"],
+      "command": "tessera",
+      "args": ["mcp"],
       "env": { "TESSERA_PROJECT_ROOT": "/path/to/project" }
     }
   }
 }
 ```
 
-`uvx` fetches and caches tessera from PyPI on first run — no PATH entry needed. Claude Code picks this up automatically.
+This runs the `tessera` command you installed in step 1 of the installation, so it must be on your `PATH`. The file contains an absolute path, so keep `.mcp.json` out of version control. The plugin registers the same server for you without a per-project file, using the current folder as the project root.
 
 ## CLI reference
 
@@ -98,7 +93,7 @@ tessera dashboard [PATH]         Start dashboard at localhost:5050
 
 ## Debate mode
 
-Requires `pip install tessera[debate]` and the `codex` CLI.
+Requires the `debate` extra (`pipx install "tessera[debate] @ git+https://github.com/dr-code/tessera"`) and the `codex` CLI.
 
 ### Connecting to ChatGPT (no API key needed)
 
