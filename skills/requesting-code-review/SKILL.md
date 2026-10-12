@@ -3,11 +3,13 @@ name: requesting-code-review
 description: Use when completing tasks, implementing major features, or before merging to verify work meets requirements
 ---
 
+<!-- TESSERA:OVERLAY begin provenance -->
+<!-- Generated from obra/superpowers v7.0.0 (bb92a77) + overlays/skills/requesting-code-review.md. Do not edit by hand: edit the overlay and run scripts/build_skills.py. -->
+<!-- TESSERA:OVERLAY end provenance -->
+
 # Requesting Code Review
 
-<!-- Adapted from obra/superpowers — Tessera code-review skill is the primary entry point -->
-
-Dispatch a code reviewer to catch issues before they cascade.
+Dispatch a code reviewer subagent to catch issues before they cascade. The reviewer gets precisely crafted context for evaluation — never your session's history.
 
 **Core principle:** Review early, review often.
 
@@ -25,57 +27,79 @@ Dispatch a code reviewer to catch issues before they cascade.
 
 ## How to Request
 
-### Option A: Tessera code-review skill (primary)
-
-If Tessera is installed, invoke the `code-review` skill. It runs a multi-model review (Claude + GPT via Codex CLI) with structured feedback:
-
-```
-/code-review
-```
-
-The skill handles git diff extraction, context loading, and the review synthesis.
-
-### Option B: Subagent dispatch (when Tessera code-review unavailable)
-
 **1. Get git SHAs:**
 ```bash
-BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main
+BASE_SHA=$(git rev-parse HEAD~1)  # or: git merge-base origin/main HEAD
 HEAD_SHA=$(git rev-parse HEAD)
 ```
 
 **2. Dispatch code reviewer subagent:**
 
-Use Task tool with `general-purpose` type.
+Dispatch a `general-purpose` subagent, filling the template at [code-reviewer.md](code-reviewer.md)
 
-**Provide:**
-- Brief description of what you built
-- What it should do (plan or requirements)
-- `BASE_SHA` and `HEAD_SHA`
-- Ask for: security vulnerabilities, missing error handling, spec compliance, test adequacy, type safety
+**Placeholders:**
+- `{DESCRIPTION}` - Brief summary of what you built
+- `{PLAN_OR_REQUIREMENTS}` - What it should do
+- `{BASE_SHA}` - Starting commit
+- `{HEAD_SHA}` - Ending commit
 
 **3. Act on feedback:**
-- Fix CRITICAL issues immediately
-- Fix IMPORTANT issues before proceeding
-- Note MINOR issues for later
+- Fix Critical issues immediately
+- Fix Important issues before proceeding
+- Note Minor issues for later
 - Push back if reviewer is wrong (with reasoning)
 
-## Integration with Workflows
+<!-- TESSERA:OVERLAY begin requesting-code-review-1 -->
+## Independent Second Opinion (optional)
 
-**Subagent-Driven Development:**
-- Review after EACH task
-- Catch issues before they compound
-- Fix before moving to next task
+If tessera's `codex-review` skill is available, you can also run `/codex-review` for an independent review by a different model (GPT via the Codex CLI) on the same diff. Treat its findings the way you treat any reviewer's: verify each one before acting (see `tessera:receiving-code-review`).
+<!-- TESSERA:OVERLAY end requesting-code-review-1 -->
 
-**Executing Plans:**
-- Review after each task or at natural checkpoints
+## Example
+
+```
+[Just completed Task 2: Add verification function]
+
+You: Let me request code review before proceeding.
+
+BASE_SHA=$(git log --oneline | grep "Task 1" | head -1 | cut -d' ' -f1)
+HEAD_SHA=$(git rev-parse HEAD)
+
+[Dispatch code reviewer subagent]
+  DESCRIPTION: Added verifyIndex() and repairIndex() with 4 issue types
+  PLAN_OR_REQUIREMENTS: Task 2 from docs/superpowers/plans/deployment-plan.md
+  BASE_SHA: a7981ec
+  HEAD_SHA: 3df7661
+
+[Subagent returns]:
+  Strengths: Clean architecture, real tests
+  Issues:
+    Important: Missing progress indicators
+    Minor: Magic number (100) for reporting interval
+  Assessment: Ready to proceed
+
+You: [Fix progress indicators]
+[Continue to Task 3]
+```
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "I'll just review the diff myself instead of dispatching a reviewer" | You're the coordinator — reviewing the diff inline burns the context window you need to keep driving the work. Dispatch a reviewer subagent: the diff and the evaluation live in its context, and only the findings come back to you. |
+| "The reviewer needs my whole session history to understand the change" | Hand it precisely crafted context, never your session's history. That keeps the reviewer on the work product, not your thought process. |
 
 ## Red Flags
 
 **Never:**
 - Skip review because "it's simple"
-- Ignore CRITICAL issues
-- Proceed with unfixed IMPORTANT issues
+- Ignore Critical issues
+- Proceed with unfixed Important issues
+- Argue with valid technical feedback
 
 **If reviewer wrong:**
 - Push back with technical reasoning
 - Show code/tests that prove it works
+- Request clarification
+
+See template at: [code-reviewer.md](code-reviewer.md)

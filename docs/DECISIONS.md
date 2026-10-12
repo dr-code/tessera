@@ -43,6 +43,9 @@ Tessera provides codebase memory (graph, plans, decisions) but had no structured
 ### Decision
 Bundle adapted Superpowers skills in `skills/` (14 files) and Plannotator hooks in `hooks/hooks.json`. Skills are adapted to inject Tessera graph tool calls (`graph_retrieve`, `graph_read`, `graph_impact`, `plan_save`) at the appropriate workflow phases. The `plan_save` MCP tool bridges the two: the `writing-plans` skill calls it to register approved plans into Tessera's DB, enabling `tessera-verify` compliance checking after implementation.
 
+### Update (2026-10-12): built from a pinned upstream
+The bundled skills are no longer hand-adapted copies. They are generated from a pinned obra/superpowers release (currently v7.0.0) plus small tessera overlays, so a re-base is a script run instead of a rewrite. The upstream text is kept intact and checked by tests, whole skill folders are copied (helper scripts, prompt templates), and a moved upstream heading fails the build. `diagnosing-superpowers` is not bundled because it reads session transcripts and files issues for upstream maintainers. See `overlays/README.md`.
+
 ### Alternatives Considered
 
 | Option | Pros | Cons |

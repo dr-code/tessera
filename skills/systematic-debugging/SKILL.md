@@ -3,13 +3,13 @@ name: systematic-debugging
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
 ---
 
+<!-- TESSERA:OVERLAY begin provenance -->
+<!-- Generated from obra/superpowers v7.0.0 (bb92a77) + overlays/skills/systematic-debugging.md. Do not edit by hand: edit the overlay and run scripts/build_skills.py. -->
+<!-- TESSERA:OVERLAY end provenance -->
+
 # Systematic Debugging
 
-<!-- Adapted from obra/superpowers — Tessera graph_impact added to Phase 1 -->
-
 ## Overview
-
-Random fixes waste time and create new bugs. Quick patches mask underlying issues.
 
 **Core principle:** ALWAYS find root cause before attempting fixes. Symptom fixes are failure.
 
@@ -23,21 +23,38 @@ NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST
 
 If you haven't completed Phase 1, you cannot propose fixes.
 
-## Tessera: Map Blast Radius First
+## When to Use
 
-**Before starting Phase 1 — if tessera MCP is configured in this session:**
+Use for ANY technical issue:
+- Test failures
+- Bugs in production
+- Unexpected behavior
+- Performance problems
+- Build failures
+- Integration issues
 
-```
-1. graph_continue (mandatory first call)
-2. graph_impact(changed_files=["<file where bug was reported>"])
-```
+**Use this ESPECIALLY when:**
+- Under time pressure (emergencies make guessing tempting)
+- "Just one quick fix" seems obvious
+- You've already tried multiple fixes
+- Previous fix didn't work
+- You don't fully understand the issue
 
-`graph_impact` shows which other files depend on the broken code. This tells you:
-- How far a fix might ripple
-- Which tests are likely affected
-- Whether this is a leaf-level bug or a core abstraction issue
+**Don't skip when:**
+- Issue seems simple (simple bugs have root causes too)
+- You're in a hurry (rushing guarantees rework)
+- Manager wants it fixed NOW (systematic is faster than thrashing)
 
-Surface this impact map before investigating root cause.
+<!-- TESSERA:OVERLAY begin systematic-debugging-1 -->
+## Tessera: Map the Blast Radius First
+
+If the tessera MCP is configured, before Phase 1:
+
+1. `graph_continue` (the mandatory first call)
+2. `graph_impact(changed_files=["<file where the bug was reported>"])`
+
+`graph_impact` shows which other files depend on the broken code, so you know what else a fix could affect and what else to check.
+<!-- TESSERA:OVERLAY end systematic-debugging-1 -->
 
 ## The Four Phases
 
@@ -47,54 +64,222 @@ You MUST complete each phase before proceeding to the next.
 
 **BEFORE attempting ANY fix:**
 
-1. **Read error messages carefully** — stack traces, line numbers, error codes
-2. **Reproduce consistently** — can you trigger it reliably every time?
-3. **Check recent changes** — git diff, recent commits, new dependencies
-4. **Gather evidence in multi-component systems**
-   - Add diagnostic logging at each component boundary
-   - Run once to gather evidence showing WHERE it breaks
-   - Then analyze to identify the failing component
-5. **Trace data flow** — where does the bad value originate? Trace backward through the call stack
+1. **Read Error Messages Carefully**
+   - Don't skip past errors or warnings
+   - They often contain the exact solution
+   - Read stack traces completely
+   - Note line numbers, file paths, error codes
+
+2. **Reproduce Consistently**
+   - Can you trigger it reliably?
+   - What are the exact steps?
+   - Does it happen every time?
+   - If not reproducible → gather more data, don't guess
+
+3. **Check Recent Changes**
+   - What changed that could cause this?
+   - Git diff, recent commits
+   - New dependencies, config changes
+   - Environmental differences
+
+4. **Gather Evidence in Multi-Component Systems**
+
+   **WHEN system has multiple components (CI → build → signing, API → service → database):**
+
+   **BEFORE proposing fixes, add diagnostic instrumentation:**
+   ```
+   For EACH component boundary:
+     - Log what data enters component
+     - Log what data exits component
+     - Verify environment/config propagation
+     - Check state at each layer
+
+   Run once to gather evidence showing WHERE it breaks
+   THEN analyze evidence to identify failing component
+   THEN investigate that specific component
+   ```
+
+   **Example (multi-layer system):**
+   ```bash
+   # Layer 1: Workflow
+   echo "=== Secrets available in workflow: ==="
+   echo "IDENTITY: $([ -n "${IDENTITY:-}" ] && echo SET || echo UNSET)"
+
+   # Layer 2: Build script
+   echo "=== Env vars in build script: ==="
+   printenv IDENTITY >/dev/null 2>&1 && echo "IDENTITY in environment" || echo "IDENTITY not in environment"
+
+   # Layer 3: Signing script
+   echo "=== Keychain state: ==="
+   security list-keychains
+   security find-identity -v
+
+   # Layer 4: Actual signing
+   codesign --sign "$IDENTITY" --verbose=4 "$APP"
+   ```
+
+   **This reveals:** Which layer fails (secrets → workflow ✓, workflow → build ✗)
+
+5. **Trace Data Flow**
+
+   **WHEN error is deep in call stack:**
+
+   See `root-cause-tracing.md` in this directory for the complete backward tracing technique.
+
+   **Quick version:**
+   - Where does bad value originate?
+   - What called this with bad value?
+   - Keep tracing up until you find the source
+   - Fix at source, not at symptom
 
 ### Phase 2: Pattern Analysis
 
-1. **Find working examples** — use `graph_retrieve(query="<working component similar to broken one>")` if tessera MCP is configured to find similar code in the codebase
-2. **Read the reference** — use `graph_read` to read the working implementation completely, not just skim
-3. **Identify differences** — list every difference, however small
-4. **Understand dependencies** — what settings, config, environment does this need?
+**Find the pattern before fixing:**
+
+1. **Find Working Examples**
+   - Locate similar working code in same codebase
+   - What works that's similar to what's broken?
+
+2. **Compare Against References**
+   - If implementing pattern, read reference implementation COMPLETELY
+   - Don't skim - read every line
+   - Understand the pattern fully before applying
+
+3. **Identify Differences**
+   - What's different between working and broken?
+   - List every difference, however small
+   - Don't assume "that can't matter"
+
+4. **Understand Dependencies**
+   - What other components does this need?
+   - What settings, config, environment?
+   - What assumptions does it make?
+
+<!-- TESSERA:OVERLAY begin systematic-debugging-2 -->
+### Tessera: find and read the working example
+
+If the tessera MCP is configured, use `graph_retrieve(query="<working component similar to the broken one>")` to find similar code, and `graph_read` to read the working implementation completely.
+<!-- TESSERA:OVERLAY end systematic-debugging-2 -->
 
 ### Phase 3: Hypothesis and Testing
 
-1. **Form single hypothesis** — "I think X is the root cause because Y"
-2. **Test minimally** — smallest possible change to test hypothesis
-3. **Verify before continuing** — did it work? If not, form NEW hypothesis. Don't stack fixes.
-4. **When you don't know** — say so; don't pretend
+**Scientific method:**
+
+1. **Form Single Hypothesis**
+   - State clearly: "I think X is the root cause because Y"
+   - Write it down
+   - Be specific, not vague
+
+2. **Test Minimally**
+   - Make the SMALLEST possible change to test hypothesis
+   - One variable at a time
+   - Don't fix multiple things at once
+
+3. **Verify Before Continuing**
+   - Did it work? Yes → Phase 4
+   - Didn't work? Form NEW hypothesis
+   - DON'T add more fixes on top
+
+4. **When You Don't Know**
+   - Say "I don't understand X"
+   - Don't pretend to know
+   - Ask for help
+   - Research more
 
 ### Phase 4: Implementation
 
-1. **Create failing test case** — use `test-driven-development` skill
-2. **Implement single fix** — address root cause, ONE change at a time
-3. **Verify fix** — test passes, no regressions, issue actually resolved
-4. **If tessera MCP is configured:** register the fix:
-   ```
-   graph_register_edit(
-     files   = ["path/to/fixed/file::function_name"],
-     summary = "Fixed: <root cause description>",
-     checklist_item_id = <id if this maps to an active plan item>
-   )
-   ```
-5. **If fix doesn't work** — return to Phase 1 with new information
-6. **If 3+ fixes failed** — STOP. Question the architecture. Discuss with user.
+**Fix the root cause, not the symptom:**
 
-## Red Flags — STOP and Follow Process
+1. **Create Failing Test Case**
+   - Simplest possible reproduction
+   - Automated test if possible
+   - One-off test script if no framework
+   - MUST have before fixing
+   - Use the `tessera:test-driven-development` skill for writing proper failing tests
 
+2. **Implement Single Fix**
+   - Address the root cause identified
+   - ONE change at a time
+   - No "while I'm here" improvements
+   - No bundled refactoring
+
+3. **Verify Fix**
+   - Test passes now?
+   - No other tests broken?
+   - Issue actually resolved?
+   - Use the `tessera:verification-before-completion` skill before claiming success
+
+4. **If Fix Doesn't Work**
+   - STOP
+   - Count: How many fixes have you tried?
+   - If < 3: Return to Phase 1, re-analyze with new information
+   - **If ≥ 3: STOP and question the architecture (step 5 below)**
+   - DON'T attempt Fix #4 without architectural discussion
+
+5. **If 3+ Fixes Failed: Question Architecture**
+
+   **Pattern indicating architectural problem:**
+   - Each fix reveals new shared state/coupling/problem in different place
+   - Fixes require "massive refactoring" to implement
+   - Each fix creates new symptoms elsewhere
+
+   **STOP and question fundamentals:**
+   - Is this pattern fundamentally sound?
+   - Are we "sticking with it through sheer inertia"?
+   - Should we refactor architecture vs. continue fixing symptoms?
+
+   **Discuss with your human partner before attempting more fixes**
+
+   This is NOT a failed hypothesis - this is a wrong architecture.
+
+<!-- TESSERA:OVERLAY begin systematic-debugging-3 -->
+### Tessera: register the fix
+
+If the tessera MCP is configured, once the fix is in, call `graph_register_edit(files=["file::symbol"], summary="<what was wrong and the fix>")`.
+<!-- TESSERA:OVERLAY end systematic-debugging-3 -->
+
+## Red Flags - STOP and Follow Process
+
+If you catch yourself thinking:
 - "Quick fix for now, investigate later"
 - "Just try changing X and see if it works"
+- "Add multiple changes, run tests"
+- "Skip the test, I'll manually verify"
+- "It's probably X, let me fix that"
+- "I don't fully understand but this might work"
+- "Pattern says X but I'll adapt it differently"
+- "Here are the main problems: [lists fixes without investigation]"
 - Proposing solutions before tracing data flow
-- "One more fix attempt" when already tried 2+
-- Each fix reveals a new problem in a different place
+- **"One more fix attempt" (when already tried 2+)**
+- **Each fix reveals new problem in different place**
 
-**All of these mean: Return to Phase 1.**
+**ALL of these mean: STOP. Return to Phase 1.**
+
+**If 3+ fixes failed:** Question the architecture (see Phase 4.5)
+
+## your human partner's Signals You're Doing It Wrong
+
+**Watch for these redirections:**
+- "Is that not happening?" - You assumed without verifying
+- "Will it show us...?" - You should have added evidence gathering
+- "Stop guessing" - You're proposing fixes without understanding
+- "Ultra-think this" - Question fundamentals, not just symptoms
+- "We're stuck?" (frustrated) - Your approach isn't working
+
+**When you see these:** STOP. Return to Phase 1.
+
+## Common Rationalizations
+
+| Excuse | Reality |
+|--------|---------|
+| "Issue is simple, don't need process" | Simple issues have root causes too. Process is fast for simple bugs. |
+| "Emergency, no time for process" | Systematic debugging is FASTER than guess-and-check thrashing. |
+| "Just try this first, then investigate" | First fix sets the pattern. Do it right from the start. |
+| "I'll write test after confirming fix works" | Untested fixes don't stick. Test first proves it. |
+| "Multiple fixes at once saves time" | Can't isolate what worked. Causes new bugs. |
+| "Reference too long, I'll adapt the pattern" | Partial understanding guarantees bugs. Read it completely. |
+| "I see the problem, let me fix it" | Seeing symptoms ≠ understanding root cause. |
+| "One more fix attempt" (after 2+ failures) | 3+ failures = architectural problem. Question pattern, don't fix again. |
 
 ## Quick Reference
 
@@ -105,7 +290,21 @@ You MUST complete each phase before proceeding to the next.
 | **3. Hypothesis** | Form theory, test minimally | Confirmed or new hypothesis |
 | **4. Implementation** | Create test, fix, verify | Bug resolved, tests pass |
 
-## Related Skills
+## When Process Reveals "No Root Cause"
 
-- `test-driven-development` — for creating failing test case (Phase 4, Step 1)
-- `verification-before-completion` — verify fix worked before claiming success
+If systematic investigation reveals issue is truly environmental, timing-dependent, or external:
+
+1. You've completed the process
+2. Document what you investigated
+3. Implement appropriate handling (retry, timeout, error message)
+4. Add monitoring/logging for future investigation
+
+**But:** 95% of "no root cause" cases are incomplete investigation.
+
+## Supporting Techniques
+
+These techniques are part of systematic debugging and available in this directory:
+
+- **`root-cause-tracing.md`** - Trace bugs backward through call stack to find original trigger
+- **`defense-in-depth.md`** - Add validation at multiple layers after finding root cause
+- **`condition-based-waiting.md`** - Replace arbitrary timeouts with condition polling
