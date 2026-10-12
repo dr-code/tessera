@@ -3,47 +3,63 @@ name: writing-plans
 description: Use when you have a spec or requirements for a multi-step task, before touching code
 ---
 
-# Writing Plans
+<!-- TESSERA:OVERLAY begin provenance -->
+<!-- Generated from obra/superpowers v7.0.0 (bb92a77) + overlays/skills/writing-plans.md. Do not edit by hand: edit the overlay and run scripts/build_skills.py. -->
+<!-- TESSERA:OVERLAY end provenance -->
 
-<!-- Adapted from obra/superpowers — Tessera graph context + plan_save integration added -->
+# Writing Plans
 
 ## Overview
 
-Write comprehensive implementation plans assuming the engineer has zero context for the codebase and questionable taste. Document everything they need: which files to touch, code, testing, docs, how to verify. Bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
+Write implementation plans for an engineer who has not seen this codebase or this spec. Assume they write idiomatic code in the project's language once they know the exact interface and the exact test, and that they will make a reasonable choice wherever the plan leaves one open. What they cannot know is what you decided: which files, which names and signatures, which values from the spec, which tests prove each task. Document those. Give them the whole plan as bite-sized tasks. DRY. YAGNI. TDD. Frequent commits.
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>.md`
+**Context:** If working in an isolated worktree, it should have been created via the `tessera:using-git-worktrees` skill at execution time.
 
-## Phase 0: Tessera Context Load
+**Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
+- (User preferences for plan location override this default)
 
-**If tessera MCP is configured in this session:**
+<!-- TESSERA:OVERLAY begin writing-plans-1 -->
+## Tessera Context Load
 
-```
-1. graph_continue (mandatory first call)
-2. graph_retrieve with the feature's key terms
-3. graph_read each recommended file (at high confidence: read all; medium/low: up to max_supplementary_files)
-4. graph_action_summary — surface any locked decisions that constrain this plan
-```
+If the tessera MCP is configured in this session, ground the file-structure analysis in the real codebase before you write a single task:
 
-This grounds the file structure analysis in actual codebase reality before writing a single task.
+1. `graph_continue` (the mandatory first call)
+2. `graph_retrieve` with the feature's key terms
+3. `graph_read` each recommended file (at high confidence read all of them; at medium or low, up to `max_supplementary_files`)
+4. `graph_action_summary` to surface locked decisions that constrain this plan
+
+In an existing codebase, follow the patterns that retrieval shows.
+<!-- TESSERA:OVERLAY end writing-plans-1 -->
 
 ## Scope Check
 
-If the spec covers multiple independent subsystems, suggest breaking into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
+If the spec covers multiple independent subsystems, it should have been broken into sub-project specs during brainstorming. If it wasn't, suggest breaking this into separate plans — one per subsystem. Each plan should produce working, testable software on its own.
 
 ## File Structure
 
-Before defining tasks, map out which files will be created or modified:
+Before defining tasks, map out which files will be created or modified and what each one is responsible for. This is where decomposition decisions get locked in.
 
-- Design units with clear boundaries and well-defined interfaces
-- Prefer smaller, focused files over large ones
-- Files that change together should live together
-- In existing codebases (informed by graph_retrieve above), follow established patterns
+- Design units with clear boundaries and well-defined interfaces. Each file should have one clear responsibility.
+- You reason best about code you can hold in context at once, and your edits are more reliable when files are focused. Prefer smaller, focused files over large ones that do too much.
+- Files that change together should live together. Split by responsibility, not by technical layer.
+- In existing codebases, follow established patterns. If the codebase uses large files, don't unilaterally restructure - but if a file you're modifying has grown unwieldy, including a split in the plan is reasonable.
 
-## Bite-Sized Task Granularity
+This structure informs the task decomposition. Each task should produce self-contained changes that make sense independently.
 
-**Each step is one action (2-5 minutes):**
+## Task Right-Sizing
+
+A task is the smallest unit that carries its own test cycle and is worth a
+fresh reviewer's gate. When drawing task boundaries: fold setup,
+configuration, scaffolding, and documentation steps into the task whose
+deliverable needs them; split only where a reviewer could meaningfully
+reject one task while approving its neighbor. Each task ends with an
+independently testable deliverable.
+
+## Step Granularity
+
+**Each step is one action with a checkable result:**
 - "Write the failing test" - step
 - "Run it to make sure it fails" - step
 - "Implement the minimal code to make the test pass" - step
@@ -57,13 +73,35 @@ Before defining tasks, map out which files will be created or modified:
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use subagent-driven-development (recommended) or executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use tessera:subagent-driven-development (recommended) or tessera:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** [One sentence describing what this builds]
 
 **Architecture:** [2-3 sentences about approach]
 
 **Tech Stack:** [Key technologies/libraries]
+
+**Spec:** [path to the spec/design doc this plan implements — the plan
+argues from the spec, so the spec travels with it; executors read both]
+
+## Global Constraints
+
+[The spec's project-wide requirements — version floors, dependency limits,
+naming and copy rules, platform requirements — one line each, with exact
+values copied verbatim from the spec. Every task's requirements implicitly
+include this section.]
+
+## Review Focus
+
+[The five input classes or failure modes the spec implies but no task's
+tests exercise that are most likely to bite a person using this software
+— one line each, naming the input or condition and the behavior a
+reasonable person would expect, most likely first. The spec is a vision
+document: it says what the software must do, not everything it will
+meet, and its silence on an input is not permission for that input to
+break the program. Write the list here, once, with the spec in front of
+you. Then, for each line, add the test that pins it to the task that
+owns the code, in that task's own step style.]
 
 ---
 ```
@@ -78,7 +116,13 @@ Before defining tasks, map out which files will be created or modified:
 - Modify: `exact/path/to/existing.py:123-145`
 - Test: `tests/exact/path/to/test.py`
 
-- [ ] **Step 1:** Write the failing test
+**Interfaces:**
+- Consumes: [what this task uses from earlier tasks — exact signatures]
+- Produces: [what later tasks rely on — exact function names, parameter
+  and return types. A task's implementer sees only their own task; this
+  block is how they learn the names and types neighboring tasks use.]
+
+- [ ] **Step 1: Write the failing test**
 
 ```python
 def test_specific_behavior():
@@ -86,66 +130,85 @@ def test_specific_behavior():
     assert result == expected
 ```
 
-- [ ] **Step 2:** Run test to verify it fails
+- [ ] **Step 2: Run test to verify it fails**
 
 Run: `pytest tests/path/test.py::test_name -v`
 Expected: FAIL with "function not defined"
 
-- [ ] **Step 3:** Write minimal implementation
+- [ ] **Step 3: Implement `function(input: InputType) -> ResultType` in `exact/path/to/file.py`**
 
-- [ ] **Step 4:** Run test to verify it passes
+One line on the approach when the signature and the test leave a choice
+(which library call, which data structure); a code block only for an
+algorithm they do not determine.
 
-- [ ] **Step 5:** Commit
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `pytest tests/path/test.py::test_name -v`
+Expected: PASS
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add tests/path/test.py src/path/file.py
+git commit -m "feat: add specific feature"
+```
 ````
 
-## No Placeholders
+## What a Step Contains
 
-Every step must contain the actual content an engineer needs. Never write:
-- "TBD", "TODO", "implement later"
-- "Add appropriate error handling" (without showing the code)
-- "Write tests for the above" (without actual test code)
-- "Similar to Task N" (repeat the code — engineer may be reading tasks out of order)
+A step is done when the implementer can write exactly one reasonable thing
+from it. That is the whole requirement: unambiguous, not complete. Each kind
+of step carries what makes it unambiguous and nothing more:
+
+- **A test step:** the test's name and its assertions, as code, with the
+  spec's exact values in them.
+- **A code step:** the exact signature (name, parameters, return type), the
+  file it lives in, and the specific values the spec pins. The implementer
+  writes the body. A body appears only for an algorithm the signature and
+  tests do not determine, or for exact copy the spec fixes.
+- **A verification step:** the command to run and the output that means it
+  passed.
+- **A reference to another task:** that task's Interfaces block says what
+  to use; the plan does not repeat that task's code.
+
+A plan is the set of decisions the implementer cannot make alone. A plan
+longer than the code it describes has written the code instead. Lines that
+decide nothing ("TBD", "handle edge cases", "add appropriate validation",
+"write tests for the above", a type or function no task defines) are the
+opposite failure, and the self-review catches both.
 
 ## Self-Review
 
-After writing the complete plan, check against the spec:
+After writing the complete plan, look at the spec with fresh eyes and check the plan against it. This is a checklist you run yourself — not a subagent dispatch.
 
-1. **Spec coverage:** Can you point to a task that implements each requirement?
-2. **Placeholder scan:** Any red flags from the list above?
-3. **Type consistency:** Do method signatures match across tasks?
+**1. Spec coverage:** Skim each section/requirement in the spec. Can you point to a task that implements it? List any gaps.
 
-Fix inline. No need to re-review.
+**2. Step scan:** Every step must let the implementer write exactly one reasonable thing, and no step may carry more than that: a line that decides nothing is a gap, a function body the signature and tests already determine is a transcript. Fix both.
 
-## Phase 5.5: Codex Plan Review (Complexity Heuristic)
+**3. Type consistency:** Do the types, method signatures, and property names you used in later tasks match what you defined in earlier tasks? A function called `clearLayers()` in Task 3 but `clearFullLayers()` in Task 7 is a bug.
 
-**Auto-triggers** if ANY of:
-- Plan has >3 tasks
-- Plan modifies >5 files
-- Touches auth, payments, security, DB schema, API contracts, migrations
-- User says "debate", "codex review", or uses `--debate`
+**4. Review Focus:** For each input class or failure mode the spec implies, is there a task whose tests exercise it? The five uncovered ones most likely to bite a person go in the Review Focus section, and each line there gets its test added to the owning task. An empty section means you checked and found none, not that you skipped the check.
 
-**Skips** for: small plans (≤3 tasks, ≤5 files), doc-only, UI-only. Force off with `--no-debate`.
+**5. Proportion:** Compare the plan's length to the spec's. A plan several times longer than the spec it implements is a transcript of the program, not a plan. If code blocks are most of the document, replace bodies with signatures, test names and assertions, and check that each step is still unambiguous.
 
-When triggered, after self-review but before archiving:
+If you find issues, fix them inline. No need to re-review — just fix and move on. If you find a spec requirement with no task, add the task.
+
+<!-- TESSERA:OVERLAY begin writing-plans-2 -->
+## Codex Plan Review (complex plans)
+
+After self-review and before you save the plan, decide whether a second model should review it.
+
+It **auto-runs** if ANY of these hold: the plan has more than 3 tasks; it modifies more than 5 files; it touches auth, payments, security, database schema, API contracts, or migrations; or your human partner says "debate" or "codex review" or passes `--debate`. It **skips** small plans (3 tasks or fewer and 5 files or fewer), doc-only, and UI-only plans. `--no-debate` forces it off.
 
 ```bash
 codex exec "Review this implementation plan. Plan: <PLAN_MARKDOWN>. Identify: missing steps, sequencing errors, security holes, integration risks, untested edge cases. Per issue: [CRITICAL|HIGH|MED|LOW]: <issue> — <suggested fix>. End with VERDICT: approved | needs_revision."
 ```
 
-1. Fix all CRITICAL and HIGH issues inline in the plan.
-2. Apply judgment to MED/LOW.
-3. Append a "Codex Review Summary" section at the end of the plan:
-   - Verdict
-   - Issues fixed
-   - Issues deferred (with reason)
-
-Then proceed to plan_save with the revised plan.
+Fix every CRITICAL and HIGH issue in the plan, apply judgment to MED and LOW, and add a "Codex Review Summary" at the end of the plan: the verdict, the issues fixed, and the issues deferred with the reason.
 
 ## Archive with Tessera
 
-**After the plan is written and self-reviewed — if tessera MCP is configured:**
-
-Call the `plan_save` MCP tool:
+After the plan is written and self-reviewed, if the tessera MCP is configured, call the `plan_save` MCP tool so the plan is registered:
 
 ```
 plan_save(
@@ -156,21 +219,34 @@ plan_save(
 )
 ```
 
-This registers the plan in Tessera's SQLite archive, parses the `- [ ]` checklist items, and enables `tessera-verify` to track compliance after implementation.
+This stores the plan in tessera's archive, parses the `- [ ]` checklist items, and lets `tessera-verify` check compliance after implementation. Keep the returned `plan_id`: it appears in `graph_continue` output as `active_checklist`, and `graph_register_edit` uses it to mark tasks complete.
 
-**Save the returned `plan_id`** — it appears in `graph_continue` output as `active_checklist` and is used by `graph_register_edit` to auto-mark tasks complete.
+If you are in plan mode, `ExitPlanMode` opens the Plannotator visual review. Wait for the approval before handing off for execution.
+<!-- TESSERA:OVERLAY end writing-plans-2 -->
 
 ## Execution Handoff
 
-After saving the plan, offer execution choice:
+After saving and self-reviewing the plan, link it for your human partner
+to read. If they have already explicitly supplied an execution method, ask
+them to review the plan and confirm it captures what they want; wait for that
+review before implementation, then use the preserved method. Otherwise, ask
+them to review the plan and choose an execution method before implementation.
 
-**"Plan complete and saved to `docs/plans/<filename>.md`. Two execution options:**
+**When no execution method has already been supplied:**
 
-**1. Subagent-Driven (recommended)** — Fresh subagent per task, two-stage review
+**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Which execution approach would you prefer?**
 
-**2. Inline Execution** — Execute tasks in this session with batch checkpoints
+- **Subagent-driven** - A fresh subagent implements each task and a fresh reviewer checks it before the next one starts, then a whole-branch review at the end. Most thorough; costs a fresh context per task and per review.
+- **Native** - I implement every task myself in this session, the way this harness runs work, then one fresh reviewer on the most capable model checks the whole branch. Cheapest and fastest; no independent review until the end. Runs well with a mid-tier session model, since the plan carries the design.
 
-**Which approach?"**
+**For this plan I recommend <one of the two>, because <one sentence from the plan: how much the tasks depend on each other's interfaces, how many there are, what a shipped mistake would cost>. Does the plan capture what you want, and which approach should we use?"**
 
-- Subagent-Driven: invoke `subagent-driven-development` skill
-- Inline Execution: invoke `executing-plans` skill
+**When an execution method has already been supplied:**
+
+**"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Does it capture what you want?"**
+
+**If Subagent-driven chosen:**
+- **REQUIRED SUB-SKILL:** Use tessera:subagent-driven-development
+
+**If Native chosen:**
+- **REQUIRED SUB-SKILL:** Use tessera:executing-plans

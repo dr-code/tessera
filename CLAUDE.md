@@ -13,7 +13,7 @@ Tessera is an open-source Python MCP server + CLI giving Claude Code persistent 
 - `src/tessera/handoff/` — session handoff generator
 - `src/tessera/dashboard/` — Flask dashboard, localhost:5050
 - `src/tessera/cli.py` — Click CLI entry point
-- `skills/` — 14 Superpowers skills (adapted with Tessera graph context)
+- `skills/` — 14 Superpowers skills, generated from a pinned obra/superpowers release plus tessera overlays (`overlays/`, `scripts/build_skills.py`; do not edit them by hand)
 - `hooks/hooks.json` — Plannotator ExitPlanMode hooks (visual plan review)
 
 ## Key Decisions (locked)
@@ -22,7 +22,7 @@ Tessera is an open-source Python MCP server + CLI giving Claude Code persistent 
 - Debate: GPT (Codex CLI subprocess) → Claude critique → GPT respond → Claude synthesize
 - Feature flags: TESSERA_ENABLE_DEBATE, TESSERA_ENABLE_DASHBOARD, TESSERA_ENABLE_COMPLIANCE
 - Core install (no debate deps): zero remote calls, no API keys needed
-- Methodology: Superpowers skills bundled in `skills/` (adapted from obra/superpowers); Plannotator hooks in `hooks/hooks.json`
+- Methodology: Superpowers skills bundled in `skills/` (obra/superpowers plus overlays; see `overlays/README.md`); Plannotator hooks in `hooks/hooks.json`
 - `plan_save` MCP tool: saves raw markdown plans + parses `- [ ]` items into plan_checklist table; does NOT require debate workflow
 
 ## Superpowers Workflow

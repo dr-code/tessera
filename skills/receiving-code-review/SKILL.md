@@ -3,17 +3,11 @@ name: receiving-code-review
 description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
 ---
 
+<!-- TESSERA:OVERLAY begin provenance -->
+<!-- Generated from obra/superpowers v7.0.0 (bb92a77) + overlays/skills/receiving-code-review.md. Do not edit by hand: edit the overlay and run scripts/build_skills.py. -->
+<!-- TESSERA:OVERLAY end provenance -->
+
 # Code Review Reception
-
-<!-- Adapted from obra/superpowers — Tessera graph context and edit registration added -->
-
-## Tessera Context Load
-
-**Before evaluating any feedback — if tessera MCP is configured:**
-```
-1. graph_continue (mandatory first call)
-2. graph_action_summary — surface locked decisions; flag if feedback would violate them
-```
 
 ## Overview
 
@@ -21,9 +15,20 @@ Code review requires technical evaluation, not emotional performance.
 
 **Core principle:** Verify before implementing. Ask before assuming. Technical correctness over social comfort.
 
+<!-- TESSERA:OVERLAY begin receiving-code-review-1 -->
+## Tessera Context Load
+
+If the tessera MCP is configured, before you evaluate any feedback:
+
+1. `graph_continue` (the mandatory first call)
+2. `graph_action_summary` to surface locked decisions, and flag any feedback that would violate one. If feedback conflicts with a prior architectural decision, stop and discuss it with your human partner instead of implementing it.
+<!-- TESSERA:OVERLAY end receiving-code-review-1 -->
+
 ## The Response Pattern
 
 ```
+WHEN receiving code review feedback:
+
 1. READ: Complete feedback without reacting
 2. UNDERSTAND: Restate requirement in own words (or ask)
 3. VERIFY: Check against codebase reality
@@ -35,8 +40,8 @@ Code review requires technical evaluation, not emotional performance.
 ## Forbidden Responses
 
 **NEVER:**
-- "You're absolutely right!" (performative)
-- "Great point!" (performative)
+- "You're absolutely right!" (explicit instruction-file violation)
+- "Great point!" / "Excellent feedback!" (performative)
 - "Let me implement that now" (before verification)
 
 **INSTEAD:**
@@ -47,30 +52,82 @@ Code review requires technical evaluation, not emotional performance.
 
 ## Handling Unclear Feedback
 
-If any item is unclear: STOP. Ask for clarification on ALL unclear items before implementing any of them.
+```
+IF any item is unclear:
+  STOP - do not implement anything yet
+  ASK for clarification on unclear items
 
-Items may be related. Partial understanding = wrong implementation.
+WHY: Items may be related. Partial understanding = wrong implementation.
+```
+
+**Example:**
+```
+your human partner: "Fix 1-6"
+You understand 1,2,3,6. Unclear on 4,5.
+
+❌ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
+✅ RIGHT: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
+```
 
 ## Source-Specific Handling
 
-**From project owner:**
-- Trusted — implement after understanding
-- Still ask if scope unclear
-- No performative agreement
+### From your human partner
+- **Trusted** - implement after understanding
+- **Still ask** if scope unclear
+- **No performative agreement**
+- **Skip to action** or technical acknowledgment
 
-**From external reviewers:**
-1. Check: Technically correct for THIS codebase?
-2. Check: Breaks existing functionality?
-3. Check: Reason for current implementation?
-4. Check: Works on all platforms/versions?
+### From External Reviewers
+```
+BEFORE implementing:
+  1. Check: Technically correct for THIS codebase?
+  2. Check: Breaks existing functionality?
+  3. Check: Reason for current implementation?
+  4. Check: Works on all platforms/versions?
+  5. Check: Does reviewer understand full context?
 
-If conflicts with prior architectural decisions (check `graph_action_summary` if tessera MCP configured): STOP and discuss with project owner.
+IF suggestion seems wrong:
+  Push back with technical reasoning
+
+IF can't easily verify:
+  Say so: "I can't verify this without [X]. Should I [investigate/ask/proceed]?"
+
+IF conflicts with your human partner's prior decisions:
+  Stop and discuss with your human partner first
+```
+
+**your human partner's rule:** "External feedback - be skeptical, but check carefully"
 
 ## YAGNI Check for "Professional" Features
 
-If reviewer suggests "implementing properly": grep codebase for actual usage.
-- If unused: "This isn't called. Remove it (YAGNI)?"
-- If used: Then implement properly.
+```
+IF reviewer suggests "implementing properly":
+  grep codebase for actual usage
+
+  IF unused: "This endpoint isn't called. Remove it (YAGNI)?"
+  IF used: Then implement properly
+```
+
+**your human partner's rule:** "You and reviewer both report to me. If we don't need this feature, don't add it."
+
+## Implementation Order
+
+```
+FOR multi-item feedback:
+  1. Clarify anything unclear FIRST
+  2. Then implement in this order:
+     - Blocking issues (breaks, security)
+     - Simple fixes (typos, imports)
+     - Complex fixes (refactoring, logic)
+  3. Test each fix individually
+  4. Verify no regressions
+```
+
+<!-- TESSERA:OVERLAY begin receiving-code-review-2 -->
+## Tessera: register each fix
+
+If the tessera MCP is configured, after each fix call `graph_register_edit(files=["file::symbol"], summary="...")` so the compliance tracker reflects the change.
+<!-- TESSERA:OVERLAY end receiving-code-review-2 -->
 
 ## When To Push Back
 
@@ -79,31 +136,89 @@ Push back when:
 - Reviewer lacks full context
 - Violates YAGNI (unused feature)
 - Technically incorrect for this stack
-- Conflicts with locked architectural decisions
+- Legacy/compatibility reasons exist
+- Conflicts with your human partner's architectural decisions
+
+**How to push back:**
+- Use technical reasoning, not defensiveness
+- Ask specific questions
+- Reference working tests/code
+- Involve your human partner if architectural
+
+**If you're uncomfortable pushing back out loud:** Name that tension, then tell your partner about the issue you've seen. They'll appreciate your honesty.
 
 ## Acknowledging Correct Feedback
 
+When feedback IS correct:
 ```
 ✅ "Fixed. [Brief description of what changed]"
-✅ "Good catch — [specific issue]. Fixed in [location]."
+✅ "Good catch - [specific issue]. Fixed in [location]."
 ✅ [Just fix it and show in the code]
 
 ❌ "You're absolutely right!"
 ❌ "Great point!"
-❌ Any gratitude expression
+❌ "Thanks for catching that!"
+❌ "Thanks for [anything]"
+❌ ANY gratitude expression
 ```
 
-Actions speak. Just fix it.
+**Why no thanks:** Actions speak. Just fix it. The code itself shows you heard the feedback.
 
-## After Implementing Fixes
+**If you catch yourself about to write "Thanks":** DELETE IT. State the fix instead.
 
-**If tessera MCP is configured:** after each fix, call `graph_register_edit`:
+## Gracefully Correcting Your Pushback
+
+If you pushed back and were wrong:
 ```
-graph_register_edit(
-  files   = ["path/to/fixed/file::symbol"],
-  summary = "<what was fixed and why>",
-  checklist_item_id = <id from active_checklist if this fix maps to a plan item>
-)
+✅ "You were right - I checked [X] and it does [Y]. Implementing now."
+✅ "Verified this and you're correct. My initial understanding was wrong because [reason]. Fixing."
+
+❌ Long apology
+❌ Defending why you pushed back
+❌ Over-explaining
 ```
 
-This keeps the graph cache current and marks plan checklist items done if the review fixes were plan-tracked.
+State the correction factually and move on.
+
+## Common Mistakes
+
+| Mistake | Fix |
+|---------|-----|
+| Performative agreement | State requirement or just act |
+| Blind implementation | Verify against codebase first |
+| Batch without testing | One at a time, test each |
+| Assuming reviewer is right | Check if breaks things |
+| Avoiding pushback | Technical correctness > comfort |
+| Partial implementation | Clarify all items first |
+| Can't verify, proceed anyway | State limitation, ask for direction |
+
+## Real Examples
+
+**Performative Agreement (Bad):**
+```
+Reviewer: "Remove legacy code"
+❌ "You're absolutely right! Let me remove that..."
+```
+
+**Technical Verification (Good):**
+```
+Reviewer: "Remove legacy code"
+✅ "Checking... build target is 10.15+, this API needs 13+. Need legacy for backward compat. Current impl has wrong bundle ID - fix it or drop pre-13 support?"
+```
+
+**YAGNI (Good):**
+```
+Reviewer: "Implement proper metrics tracking with database, date filters, CSV export"
+✅ "Grepped codebase - nothing calls this endpoint. Remove it (YAGNI)? Or is there usage I'm missing?"
+```
+
+**Unclear Item (Good):**
+```
+your human partner: "Fix items 1-6"
+You understand 1,2,3,6. Unclear on 4,5.
+✅ "Understand 1,2,3,6. Need clarification on 4 and 5 before implementing."
+```
+
+## GitHub Thread Replies
+
+When replying to inline review comments on GitHub, reply in the comment thread (`gh api repos/{owner}/{repo}/pulls/{pr}/comments/{id}/replies`), not as a top-level PR comment.
