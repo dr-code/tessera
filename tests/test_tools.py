@@ -193,7 +193,11 @@ def test_graph_scan(tmp_path):
     db = Database(str(tmp_path))
     sid = db.get_or_create_session(str(tmp_path))
     state = TurnState()
-    result = scan.run(db, state, sid, str(SAMPLE_PROJECT))
+    # Scan a copy: scan.run injects the policy block into CLAUDE.md, which must
+    # never rewrite the committed fixture.
+    project = tmp_path / "sample_project"
+    shutil.copytree(SAMPLE_PROJECT, project)
+    result = scan.run(db, state, sid, str(project))
     assert result["ok"] is True
     assert result["stats"]["files_scanned"] >= 2
 
